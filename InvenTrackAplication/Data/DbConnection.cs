@@ -1,4 +1,4 @@
-﻿using System.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 namespace InventTrackAI.API.Data
 {
     public class DbConnection
@@ -12,7 +12,7 @@ namespace InventTrackAI.API.Data
 
         public SqlConnection GetConnection()
         {
-
+            return new SqlConnection(_connectionString);
         }
     }
 }

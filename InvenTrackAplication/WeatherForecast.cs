@@ -1,4 +1,4 @@
-namespace WebApplication1
+namespace InvenTrackAI.API
 {
     public class WeatherForecast
     {

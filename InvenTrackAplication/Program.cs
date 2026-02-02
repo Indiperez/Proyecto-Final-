@@ -9,9 +9,9 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 //Registrar la connexion a la base de datos como un servicio singleton
-builder.Services.AddSingleton<DbConnection>();
+//builder.Services.AddSingleton<DbConnection>();
 
-
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
@@ -19,6 +19,8 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwagger();  
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
