@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "InvenTrackAplication", "InvenTrackAplication", "{11666E47-4B87-05D7-2950-C30372103DDD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InventTrackAI.API", "InvenTrackAplication\InventTrackAI.API.csproj", "{79181FB1-69B3-2477-20A3-AAF4ED41B00C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{79181FB1-69B3-2477-20A3-AAF4ED41B00C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79181FB1-69B3-2477-20A3-AAF4ED41B00C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79181FB1-69B3-2477-20A3-AAF4ED41B00C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79181FB1-69B3-2477-20A3-AAF4ED41B00C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{79181FB1-69B3-2477-20A3-AAF4ED41B00C} = {11666E47-4B87-05D7-2950-C30372103DDD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {68AB3BE9-95BC-4F6C-9363-8247DAF7BB74}
+	EndGlobalSection
+EndGlobal
