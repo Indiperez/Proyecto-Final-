@@ -1,4 +1,5 @@
 using InventTrackAI.API.Data;
+using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,7 +13,10 @@ builder.Services.AddOpenApi();
 //Registrar la connexion a la base de datos como un servicio singleton
 builder.Services.AddSingleton<DbConnection>();
 
+//Registrar los repositorios como servicios scoped
 builder.Services.AddScoped<ProductoRespository>();
+builder.Services.AddScoped<ProveedorRepository>();
+builder.Services.AddScoped<AlertaRepository>();
 
 builder.Services.AddSwaggerGen();
 

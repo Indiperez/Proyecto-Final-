@@ -76,5 +76,17 @@ namespace InventTrackAI.API.Controllers
         {
             return Ok(_repository.GetBajaRotacion());
         }
+
+        [HttpGet("Punto-Reorden")]
+        public IActionResult GetProductosPuntoReorden([FromServices] AlertaRepository alertas)
+        {
+            var items = _repository.GetPuntoReorden();
+            foreach(var i in items.Where(x => x.Reordenar))
+            {
+                alertas.CrearSiNoExiste(i.ProductoId, $"Reabastecimiento necesario: '{i.Producto}'. El nivel de stock actual requiere generar una orden de compra.");
+            }
+
+            return Ok(items);
+        }
     }
 }

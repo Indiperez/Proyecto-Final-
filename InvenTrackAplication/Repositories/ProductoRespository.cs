@@ -157,6 +157,43 @@ namespace InventTrackAI.API.Repositories
             return productos;
         }
 
+        public List<PuntoReordenDto> GetPuntoReorden()
+        {
+            var resultado = new List<PuntoReordenDto>();
+            using(var connection = _db.GetConnection())
+            {
+                var query = @"SELECT p.Id , p.Nombre, p.StockActual, p.StockMinimo, pr.TiempoEntregaDias FROM Productos p                           
+                              INNER JOIN Proveedores pr ON p.ProveedorId = pr.Id 
+                              ";
+
+                var command = new SqlCommand(query, connection);
+                connection.Open();
+
+                var reader = command.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    var comsumoDiario = (int)reader["StockMinimo"] / 30;
+                    if(comsumoDiario == 0) comsumoDiario = 1;
+
+                    var puntoReorden = comsumoDiario * (int)reader["TiempoEntregaDias"];
+                    var stockActual = (int)reader["StockActual"];
+
+                    resultado.Add( new PuntoReordenDto
+                    {
+                        ProductoId = (int)reader["Id"],
+                        Producto = reader["Nombre"].ToString(),
+                        StockActual = stockActual,
+                        StockMinimo = (int)reader["StockMinimo"],
+                        PuntoReorden = puntoReorden,
+                        TiempoEntregaDias = (int)reader["TiempoEntregaDias"],
+                        Reordenar = stockActual <= puntoReorden
+                    });
+                }
+                return resultado;
+            }
+        }
+
 
         private Producto MapProducto(SqlDataReader reader)
         {
