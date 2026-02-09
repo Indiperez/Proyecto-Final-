@@ -114,6 +114,25 @@ Configurar la cadena de conexión en: appsettings.json ConnectionStrings
 ### Login
 ```http
 POST /api/auth/login
+```
+### Usuarios (Administración)
+```http
+GET /api/usuarios
+POST /api/usuarios
+PUT /api/usuarios/{id}/estado
+PUT /api/usuarios/{id}/rol
+PUT /api/usuarios/cambiar-password
+```
+
+### Productos
+```http
+GET /api/productos
+POST /api/productos
+PUT /api/productos/{id}
+
+
+
+
 
 ```json
 appsettings.json
