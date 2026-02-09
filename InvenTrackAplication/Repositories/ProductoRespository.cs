@@ -1,11 +1,12 @@
 ﻿using InventTrackAI.API.Data;
 using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Models;
+using InventTrackAI.API.Repositories.Interfaces;
 using Microsoft.Data.SqlClient;
 
 namespace InventTrackAI.API.Repositories
 {
-    public class ProductoRespository
+    public class ProductoRespository 
     {
         private readonly DbConnection _db;
 
@@ -160,11 +161,18 @@ namespace InventTrackAI.API.Repositories
         public List<PuntoReordenDto> GetPuntoReorden()
         {
             var resultado = new List<PuntoReordenDto>();
-            using(var connection = _db.GetConnection())
+            using (var connection = _db.GetConnection())
             {
-                var query = @"SELECT p.Id , p.Nombre, p.StockActual, p.StockMinimo, pr.TiempoEntregaDias FROM Productos p                           
-                              INNER JOIN Proveedores pr ON p.ProveedorId = pr.Id 
-                              ";
+                // NO traemos PuntoReorden de la DB, porque no existe
+                var query = @"
+            SELECT 
+                p.Id, 
+                p.Nombre, 
+                p.StockActual, 
+                p.StockMinimo, 
+                pr.TiempoEntregaDias 
+            FROM Productos p
+            INNER JOIN Proveedores pr ON p.ProveedorId = pr.Id";
 
                 var command = new SqlCommand(query, connection);
                 connection.Open();
@@ -173,21 +181,30 @@ namespace InventTrackAI.API.Repositories
 
                 while (reader.Read())
                 {
-                    var comsumoDiario = (int)reader["StockMinimo"] / 30;
-                    if(comsumoDiario == 0) comsumoDiario = 1;
+                
+                    // Asumimos que StockMinimo representa la necesidad de 30 días
+                    int stockMinimo = (int)reader["StockMinimo"];
+                    int tiempoEntrega = (int)reader["TiempoEntregaDias"];
 
-                    var puntoReorden = comsumoDiario * (int)reader["TiempoEntregaDias"];
+                    // Consumo diario estimado
+                    int consumoDiario = stockMinimo / 30;
+                    if (consumoDiario == 0) consumoDiario = 1;
+
+                    // Punto de reorden = Consumo Diario * Días de espera
+                    int puntoReordenCalculado = consumoDiario * tiempoEntrega;
+                    // ---------------------
+
                     var stockActual = (int)reader["StockActual"];
 
-                    resultado.Add( new PuntoReordenDto
+                    resultado.Add(new PuntoReordenDto
                     {
                         ProductoId = (int)reader["Id"],
                         Producto = reader["Nombre"].ToString(),
                         StockActual = stockActual,
-                        StockMinimo = (int)reader["StockMinimo"],
-                        PuntoReorden = puntoReorden,
-                        TiempoEntregaDias = (int)reader["TiempoEntregaDias"],
-                        Reordenar = stockActual <= puntoReorden
+                        StockMinimo = stockMinimo,
+                        PuntoReorden = puntoReordenCalculado, 
+                        TiempoEntregaDias = tiempoEntrega,
+                        Reordenar = stockActual <= puntoReordenCalculado 
                     });
                 }
                 return resultado;
@@ -207,5 +224,6 @@ namespace InventTrackAI.API.Repositories
                 FechaDeCreacion = Convert.ToDateTime(reader["FechaCreacion"])
             };
         }
+
     }
 }

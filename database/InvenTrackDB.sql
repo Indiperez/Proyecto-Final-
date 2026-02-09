@@ -20,12 +20,19 @@ GO
 CREATE TABLE MovimientosInventario (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     ProductoId INT NOT NULL,
-    Tipo NVARCHAR(10) CHECK (Tipo IN ('Entrada', 'Salida')),
-    Cantidad INT NOT NULL,
-    Fecha DATETIME DEFAULT GETDATE(),
-    CONSTRAINT FK_Movimientos_Productos
-        FOREIGN KEY (ProductoId) REFERENCES Productos(Id)
+    UsuarioId INT NOT NULL,
+    Tipo NVARCHAR(10) CHECK (Tipo IN ('Entrada', 'Salida', 'Ajuste')),
+    Cantidad INT NOT NULL CHECK (Cantidad > 0),
+    Fecha DATETIME NOT NULL DEFAULT GETDATE(),
+    Observacion NVARCHAR(255),
+
+    CONSTRAINT FK_Movimientos_Productos 
+        FOREIGN KEY (ProductoId) REFERENCES Productos(Id),
+
+    CONSTRAINT FK_Movimientos_Usuarios
+        FOREIGN KEY (UsuarioId) REFERENCES Usuarios(Id)
 );
+
 GO
 
 -- Datos de prueba
@@ -88,4 +95,7 @@ VALUES (
 );
 
 SELECT * FROM Productos;
+
+
+
 

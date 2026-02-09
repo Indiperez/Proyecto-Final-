@@ -1,5 +1,6 @@
 using InventTrackAI.API.Data;
 using InventTrackAI.API.Repositories;
+using InventTrackAI.API.Repositories.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -17,6 +18,8 @@ builder.Services.AddScoped<ProductoRespository>();
 builder.Services.AddScoped<ProveedorRepository>();
 builder.Services.AddScoped<AlertaRepository>();
 builder.Services.AddScoped<UsuarioRepository>();
+// Dentro de Program.cs
+builder.Services.AddScoped<IMovimientoInventarioRepository, MovimientoInventarioRepository>();
 
 builder.Services.AddAuthorization();
 
