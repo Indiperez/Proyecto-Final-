@@ -1,5 +1,6 @@
 ﻿using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
@@ -15,17 +16,21 @@ namespace InventTrackAI.API.Controllers
             _repository = repository;
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public IActionResult GetAll()
         {
             var proveedores = _repository.GetAll();
 
-            if(proveedores.IsNullOrEmpty())
-                return NotFound(new { message = "No se encontraron proveedores."});
+            if (proveedores == null || !proveedores.Any())
+            {
+                return NotFound(new { message = "No se encontraron proveedores." });
+            }
 
             return Ok(proveedores);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public IActionResult Create([FromBody] ProveedorCreateDto dto)
         {
@@ -33,6 +38,7 @@ namespace InventTrackAI.API.Controllers
             return Ok(new {message = "Proveedor creado con exito!"});
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public IActionResult Update(int id, [FromBody]ProveedorUpdateDto dto)
         {
@@ -42,6 +48,7 @@ namespace InventTrackAI.API.Controllers
             return Ok(new { message = "Proveedor actualizado con exito!"});
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {

@@ -1,5 +1,6 @@
 ﻿using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 
@@ -16,6 +17,7 @@ namespace InventTrackAI.API.Controllers
             _repository = repository;
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public IActionResult GetAll()
         {
@@ -23,6 +25,7 @@ namespace InventTrackAI.API.Controllers
             return Ok(productos);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public IActionResult Create([FromBody] DTOs.ProductoCreateDto dto)
         {
@@ -40,6 +43,7 @@ namespace InventTrackAI.API.Controllers
 
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public IActionResult Update(int id, [FromBody] ProductoUpdateDto dto)
         {
@@ -58,6 +62,7 @@ namespace InventTrackAI.API.Controllers
 
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("Stock-bajo")]
         public IActionResult GetProductosStockBajo()
         {
@@ -71,12 +76,14 @@ namespace InventTrackAI.API.Controllers
             return Ok(_repository.GetAltaRotacion());
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("Rotacion-Baja")]
         public IActionResult GetProductosRotacionBaja()
         {
             return Ok(_repository.GetBajaRotacion());
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("Punto-Reorden")]
         public IActionResult GetProductosPuntoReorden([FromServices] AlertaRepository alertas)
         {
