@@ -44,9 +44,6 @@ VALUES
 GO
 
 
-SELECT * FROM Productos;
-SELECT * FROM MovimientosInventario;
-
 /* Crear tabla de Proveedores */
 CREATE TABLE Proveedores (
     Id INT IDENTITY PRIMARY KEY,
@@ -94,8 +91,15 @@ VALUES (
     1       -- Id del proveedor
 );
 
-SELECT * FROM Productos;
+/* Modificando la tabla productos */
+ALTER TABLE Productos
+ADD PuntoReorden INT NOT NULL DEFAULT 0;
 
+SELECT * FROM MovimientosInventario
+SELECT * FROM Alertas;
+SELECT * FROM Productos;SSS
+SELECT * FROM Proveedores;
 
-
-
+UPDATE Productos 
+SET ProveedorId = 1
+WHERE ProveedorId IS NULL;

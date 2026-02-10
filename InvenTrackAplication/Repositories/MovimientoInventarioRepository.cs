@@ -82,11 +82,12 @@ namespace InventTrackAI.API.Repositories
                 // 5. --- NUEVA LÓGICA: CALCULAR Y GUARDAR PUNTO DE REORDEN ---
 
                 // A. Obtener el tiempo de entrega del proveedor y el Stock Minimo
+                // --- CAMBIO EN TU CÓDIGO (Paso 5.A) ---
                 var getDatos = new SqlCommand(@"
-                    SELECT pr.TiempoEntregaDias, p.StockMinimo
-                    FROM Productos p
-                    INNER JOIN Proveedores pr ON p.ProveedorId = pr.Id
-                    WHERE p.Id = @ProductoId", connection, transaction);
+                        SELECT ISNULL(pr.TiempoEntregaDias, 0) AS TiempoEntregaDias, p.StockMinimo
+                        FROM Productos p
+                        LEFT JOIN Proveedores pr ON p.ProveedorId = pr.Id 
+                        WHERE p.Id = @ProductoId", connection, transaction);
                 getDatos.Parameters.AddWithValue("@ProductoId", movimiento.ProductoId);
 
                 using var readerDatos = getDatos.ExecuteReader();

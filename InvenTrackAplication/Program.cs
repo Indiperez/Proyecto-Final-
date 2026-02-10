@@ -18,8 +18,9 @@ builder.Services.AddScoped<ProductoRespository>();
 builder.Services.AddScoped<ProveedorRepository>();
 builder.Services.AddScoped<AlertaRepository>();
 builder.Services.AddScoped<UsuarioRepository>();
-// Dentro de Program.cs
+
 builder.Services.AddScoped<IMovimientoInventarioRepository, MovimientoInventarioRepository>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
 builder.Services.AddAuthorization();
 

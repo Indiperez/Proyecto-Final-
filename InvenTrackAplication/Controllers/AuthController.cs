@@ -1,7 +1,5 @@
-﻿using BCrypt.Net;
-using InventTrackAI.API.DTOs;
+﻿using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Repositories;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
