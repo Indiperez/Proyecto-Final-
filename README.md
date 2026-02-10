@@ -129,11 +129,11 @@ PUT /api/usuarios/cambiar-password
 GET /api/producto
 POST /api/producto
 PUT /api/producto/{id}
-DELETE/api/producto/{id}
-GET/api/producto/Rotacion-alta
-GET/api/producto/Rotacion-baja
-GET/api/producto/stock-bajo
-GET/api/producto/Punto-Reorden
+DELETE /api/producto/{id}
+GET /api/producto/Rotacion-alta
+GET /api/producto/Rotacion-baja
+GET /api/producto/stock-bajo
+GET /api/producto/Punto-Reorden
 ```
 
 ### Proveedores
@@ -141,7 +141,7 @@ GET/api/producto/Punto-Reorden
 GET /api/proveedor
 POST /api/proveedor
 PUT /api/proveedor/{id}
-DELETE/api/proveedor/{id}
+DELETE /api/proveedor/{id}
 ```
 
 ### Movimientos
