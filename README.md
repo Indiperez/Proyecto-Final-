@@ -117,8 +117,8 @@ POST /api/auth/login
 ```
 ### Usuarios (Administración)
 ```http
-GET /api/usuarios
-POST /api/usuarios
+GET /api/usuario/listar-usuarios
+POST /api/usuario/crear-usuario
 PUT /api/usuarios/{id}/estado
 PUT /api/usuarios/{id}/rol
 PUT /api/usuarios/cambiar-password
@@ -126,11 +126,27 @@ PUT /api/usuarios/cambiar-password
 
 ### Productos
 ```http
-GET /api/productos
-POST /api/productos
-PUT /api/productos/{id}
+GET /api/producto
+POST /api/producto
+PUT /api/producto/{id}
+DELETE /api/producto/{id}
+GET /api/producto/Rotacion-alta
+GET /api/producto/Rotacion-baja
+GET /api/producto/stock-bajo
+GET /api/producto/Punto-Reorden
+```
 
+### Proveedores
+```http
+GET /api/proveedor
+POST /api/proveedor
+PUT /api/proveedor/{id}
+DELETE /api/proveedor/{id}
+```
 
+### Movimientos
+```http
+POST /api/movimientos
 
 
 
