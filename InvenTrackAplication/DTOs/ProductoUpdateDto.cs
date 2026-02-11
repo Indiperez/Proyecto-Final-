@@ -1,6 +1,6 @@
 ﻿namespace InventTrackAI.API.DTOs
 {
-    public class ProductoCreateDto
+    public class ProductoUpdateDto
     {
         public string Nombre { get; set; }
         public string? Descripcion { get; set; }
