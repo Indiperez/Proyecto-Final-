@@ -1,4 +1,5 @@
-﻿using InventTrackAI.API.Models;
+﻿using InventTrackAI.API.DTOs;
+using InventTrackAI.API.Models;
 
 namespace InventTrackAI.API.Repositories.Interfaces
 {
@@ -8,9 +9,9 @@ namespace InventTrackAI.API.Repositories.Interfaces
 
         void CrearUsuario(Usuario usuario);
 
-        void CambiarEstado(int id, bool estado);
+        bool CambiarEstado(int id, bool estado);
 
-        void CambiarRol(int id, string nuevoRol);
+        bool CambiarRol(int id, string nuevoRol);
 
         Usuario ObtenerPorId(int id);
 

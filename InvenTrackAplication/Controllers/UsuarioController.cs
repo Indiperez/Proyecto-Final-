@@ -36,6 +36,7 @@ namespace InventTrackAI.API.Controllers
             return Ok(usuarios);
         }
 
+        [Authorize(Roles = "Admin, Supervisor")]
         [HttpPost("crear-usuario")]
         public IActionResult Crear(CrearUsuarioDto dto)
         {
@@ -54,9 +55,24 @@ namespace InventTrackAI.API.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}/estado")]
-        public IActionResult CambiarEstado(int id, [FromQuery] bool activo)
+        public IActionResult CambiarEstado(int id, [FromBody] CambiarEstadoDto dto)
         {
-            _repository.CambiarEstado(id, activo);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (userIdClaim == null)
+            {
+                return Unauthorized();
+            }
+
+            var userId = int.Parse(userIdClaim.Value);
+
+           bool actualizado =  _repository.CambiarEstado(id, dto.Activo);
+
+            if (!actualizado)
+            {
+                return NotFound($"Usuario con ID {id} no encontrado.");
+            }
+
             return Ok();
         }
 
@@ -64,18 +80,47 @@ namespace InventTrackAI.API.Controllers
         [HttpPut("{id}/rol")]
         public IActionResult CambiarRol(int id, CambiarRolDto dto)
         {
-            _repository.CambiarRol(id, dto.Rol);
-            return Ok();
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (userIdClaim == null)
+            {
+                return Unauthorized();
+            }
+
+            var userId = int.Parse(userIdClaim.Value);
+
+            if (string.IsNullOrEmpty(dto.Rol))
+            {
+                return BadRequest("El rol no puede estar vacío.");
+            }
+
+           
+            bool actualizado = _repository.CambiarRol(id, dto.Rol);
+
+            if (!actualizado)
+            {
+                return NotFound($"Usuario con ID {id} no encontrado.");
+            }
+
+            return NoContent();
         }
 
         [Authorize]
         [HttpPut("cambiar-password")]
         public IActionResult CambiarPassword(CambiarPasswordDto dto)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim.Value);
 
             var usuario = _repository.ObtenerPorId(userId);
 
+            if (usuario == null)
+            {
+                return NotFound("Usuario no encontrado.");
+            }
+       
             if (!BCrypt.Net.BCrypt.Verify(dto.PasswordActual, usuario.PasswordHash))
                 return BadRequest("Contraseña actual incorrecta");
 

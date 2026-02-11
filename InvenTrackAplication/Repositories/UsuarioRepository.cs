@@ -1,4 +1,5 @@
 ﻿using InventTrackAI.API.Data;
+using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Models;
 using InventTrackAI.API.Repositories.Interfaces;
 using Microsoft.Data.SqlClient;
@@ -16,10 +17,18 @@ namespace InventTrackAI.API.Repositories
 
         public void ActualizarPassword(int id, string nuevaPassword)
         {
-            throw new NotImplementedException();
+            using(var conn = _db.GetConnection())
+            {
+                var query = @"UPDATE Usuarios SET PasswordHash = @PasswordHash WHERE Id = @Id";
+                var cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@PasswordHash", nuevaPassword);
+                cmd.Parameters.AddWithValue("@Id", id);
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
         }
 
-        public void CambiarEstado(int id, bool estado)
+        public bool CambiarEstado(int id, bool estado)
         {
             using (var conn = _db.GetConnection())
             {
@@ -28,11 +37,15 @@ namespace InventTrackAI.API.Repositories
                 cmd.Parameters.AddWithValue("@Activo", estado);
                 cmd.Parameters.AddWithValue("@Id", id);
                 conn.Open();
-                cmd.ExecuteNonQuery();
+               
+                int filasAfectadas = cmd.ExecuteNonQuery();
+
+                return filasAfectadas > 0;
+
             }
         }
 
-        public void CambiarRol(int id, string nuevoRol)
+        public bool CambiarRol(int id, string nuevoRol)
         {
             using(var conn = _db.GetConnection())
             {
@@ -41,8 +54,13 @@ namespace InventTrackAI.API.Repositories
                 cmd.Parameters.AddWithValue("@Rol", nuevoRol);
                 cmd.Parameters.AddWithValue("@Id", id);
                 conn.Open();
-                cmd.ExecuteNonQuery();
+
+               int filasAfectadas =  cmd.ExecuteNonQuery();
+
+                return filasAfectadas > 0;
             }
+            
+
         }
 
         public void CrearUsuario(Usuario usuario)
@@ -114,7 +132,7 @@ namespace InventTrackAI.API.Repositories
         {
             using (var conn = _db.GetConnection())
             {
-                var query = @"SELECT Id, Nombre, Email, Rol, Activo FROM Usuarios WHERE Id = @Id";
+                var query = @"SELECT Id, Nombre, Email, PasswordHash, Rol, Activo FROM Usuarios WHERE Id = @Id";
                 var cmd = new SqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@Id", id);
                 conn.Open();
@@ -126,6 +144,7 @@ namespace InventTrackAI.API.Repositories
                         Id = (int)reader["Id"],
                         Nombre = reader["Nombre"].ToString(),
                         Email = reader["Email"].ToString(),
+                        PasswordHash = reader["PasswordHash"].ToString(),
                         Rol = reader["Rol"].ToString(),
                         Activo = (bool)reader["Activo"]
                     };
