@@ -2,14 +2,14 @@
 
 Sistema inteligente de gestión de inventarios desarrollado como API REST para uso real en almacenes y comercios.
 
-## 🧠 Descripción General
+##  Descripción General
 InvenTrack AI permite administrar productos, proveedores e inventario utilizando un enfoque basado en movimientos, garantizando trazabilidad, control de stock y generación automática de alertas.
 
 El backend está diseñado para ser consumido por cualquier frontend (Web, Mobile, Desktop).
 
 ---
 
-## 🚀 Tecnologías Utilizadas
+## Tecnologías Utilizadas
 - ASP.NET Core Web API
 - ADO.NET (sin ORM)
 - SQL Server
@@ -19,7 +19,7 @@ El backend está diseñado para ser consumido por cualquier frontend (Web, Mobil
 
 ---
 
-## 🔐 Seguridad
+##  Seguridad
 - Autenticación mediante JWT
 - Control de acceso por roles:
   - Admin
@@ -29,7 +29,7 @@ El backend está diseñado para ser consumido por cualquier frontend (Web, Mobil
 
 ---
 
-## 📦 Principios Clave del Sistema
+##  Principios Clave del Sistema
 - El stock **NO se modifica directamente**
 - Todo cambio de inventario se realiza mediante **movimientos**
 - Cada movimiento queda asociado a un usuario autenticado
@@ -37,7 +37,7 @@ El backend está diseñado para ser consumido por cualquier frontend (Web, Mobil
 
 ---
 
-## 📂 Módulos Principales
+##  Módulos Principales
 - Autenticación y usuarios
 - Productos
 - Proveedores
@@ -47,7 +47,7 @@ El backend está diseñado para ser consumido por cualquier frontend (Web, Mobil
 
 ---
 
-## 🔄 Flujo de Inventario
+## Flujo de Inventario
 1. Usuario se autentica
 2. Se registra un movimiento (entrada/salida/ajuste)
 3. El sistema actualiza el stock
@@ -56,7 +56,7 @@ El backend está diseñado para ser consumido por cualquier frontend (Web, Mobil
 
 ---
 
-## 🧪 Pruebas
+##  Pruebas
 La API puede probarse usando:
 - Swagger
 - Postman
@@ -65,13 +65,13 @@ Todas las rutas protegidas requieren token JWT.
 
 ---
 
-## 🛠️ Configuración
+##  Configuración
 Configurar la cadena de conexión en: appsettings.json ConnectionStrings
 
 
 ---
 
-## 🗣️ Info para frontend (FRONTEND)
+##Info para frontend (FRONTEND)
 
 > La API funciona con JWT y roles.  
 > El flujo correcto es:
@@ -94,14 +94,14 @@ Configurar la cadena de conexión en: appsettings.json ConnectionStrings
 
 ---
 
-## 📌 REGLAS IMPORTANTES PARA EL FRONTEND
+## REGLAS IMPORTANTES PARA EL FRONTEND
 
-### ❌ NO hacer en frontend
+### NO hacer en frontend
 - No editar stock manualmente
 - No calcular stock en frontend
 - No crear alertas manuales
 
-### ✅ SÍ hacer en frontend
+###  SÍ hacer en frontend
 - Mostrar stock desde la API
 - Registrar movimientos
 - Mostrar alertas generadas por el backend
@@ -109,7 +109,7 @@ Configurar la cadena de conexión en: appsettings.json ConnectionStrings
 
 ---
 
-## 📡 CONTRATO FRONTEND–BACKEND (RESUMIDO)
+##  CONTRATO FRONTEND–BACKEND (RESUMIDO)
 
 ### Login
 ```http

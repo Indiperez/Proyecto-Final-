@@ -11,7 +11,7 @@ namespace InventTrackAI.API.Repositories
         public AlertaRepository(DbConnection db)
         {
             _db = db;
-        }   
+        }
 
         public void CrearSiNoExiste(int productoId, string mensaje)
         {
@@ -45,6 +45,7 @@ namespace InventTrackAI.API.Repositories
             {
                 alertas.Add(new AlertaDto
                 {
+                    Id = (int)reader["Id"],
                     ProductoId = (int)reader["ProductoId"],
                     Mensaje = (string)reader["Mensaje"],
                     Fecha = (DateTime)reader["Fecha"],
@@ -63,7 +64,7 @@ namespace InventTrackAI.API.Repositories
             conn.Open();
             cmd.ExecuteNonQuery();
         }
-        
+
 
 
     }

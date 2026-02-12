@@ -52,6 +52,8 @@ import {
 
 import { cn } from "@/lib/utils";
 import type { Product } from "@/types/dashboard";
+import { useProducts } from "@/services/products/useProducts";
+import type { Producto } from "@/types/api";
 
 // Mock historical consumption data
 const consumptionHistory = [
@@ -140,18 +142,25 @@ const productAnalysis = [
 type PeriodFilter = "30" | "60" | "90";
 
 export default function AnalysisPage() {
-  const products: Product[] = [
-    {
-      category: "",
-      code: "",
-      currentStock: 3,
-      id: "",
-      leadTime: 2,
-      name: "",
-      status: "active",
-      stockMin: 1,
-    },
-  ];
+  const { data: productsData } = useProducts();
+  const productList: Producto[] = Array.isArray(productsData) ? productsData : (productsData && typeof productsData === 'object' && 'data' in productsData ? (productsData as { data: Producto[] }).data : []);
+
+  // Calculate real analysis based on products
+  const realProductAnalysis = productList.map(p => ({
+    id: p.id.toString(),
+    name: p.nombre,
+    avg30: 0, // No movement history yet
+    avg60: 0,
+    avg90: 0,
+    trend: "stable",
+    rotation: "medium",
+    reorderPoint: p.stockMinimo
+  }));
+
+  // Use the real analysis instead of the mock variable (which is now empty)
+  // We shadow the global variable with local derived data
+  const productAnalysis = realProductAnalysis;
+
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("30");
 
   const getTrendConfig = (trend: string) => {

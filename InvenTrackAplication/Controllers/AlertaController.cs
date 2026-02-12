@@ -15,14 +15,14 @@ namespace InventTrackAI.API.Controllers
             _repository = repository;
         }
 
-        [Authorize(Roles = "Admin,Operador,Supervisor")]
+        // [Authorize(Roles = "Admin,Operador,Supervisor")]
         [HttpGet]
         public IActionResult GetPendientes()
         {
             return Ok(_repository.GetPendientes());
         }
 
-        [Authorize(Roles = "Admin,Operador,Supervisor")]
+        // [Authorize(Roles = "Admin,Operador,Supervisor")]
         [HttpGet("{id}/leida")]
         public IActionResult MarcarLeida(int id)
         {

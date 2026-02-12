@@ -5,7 +5,7 @@ import { LoginView } from "./views/auth/LoginView";
 import { LoadingPage } from "./views/LoadingPage";
 import { DashboardLayout } from "./layouts/dashboard/DashboardLayout";
 import { DashboardPage } from "./views/dashboard/DashboardPage";
-import { ProductsPage } from "./views/dashboard/products/ProductsPage";
+import ProductsPage from "@/views/dashboard/products/ProductsPage";
 import InventoryPage from "./views/dashboard/inventory/InventoryPage";
 import MovementsPage from "./views/dashboard/movements/MovementsPage";
 import AnalysisPage from "./views/dashboard/analysis/AnalysisPage";
