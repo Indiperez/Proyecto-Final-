@@ -24,7 +24,17 @@ builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
 builder.Services.AddAuthorization();
 
-// --- CONFIGURACIÓN DE JWT (Obligatorio para Postman) ---
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
+// --- CONFIGURACIÃ“N DE JWT (Obligatorio para Postman) ---
 var jwt = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwt["Key"]);
 
@@ -56,9 +66,11 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
+app.UseCors("AllowAll");
+
 // --- ORDEN IMPORTANTE ---
 app.UseAuthentication();
-app.UseAuthorization();  
+app.UseAuthorization();
 // ------------------------
 
 app.MapControllers();

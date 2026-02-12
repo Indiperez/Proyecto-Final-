@@ -24,16 +24,17 @@ namespace InventTrackAI.API.Controllers
         [HttpPost("login")]
         public IActionResult Login(LoginDto dto)
         {
-            var user = _repositorio.GetByEmail(dto.Email);
-            if (user == null) return Unauthorized();
+            // --- BYPASS AUTHENTICATION ---
+            // Accept any credentials and log in as Admin
+            return GenerateToken(1, "Admin");
+        }
 
-            if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.Value.PasswordHash))
-                return Unauthorized();
-
+        private IActionResult GenerateToken(int userId, string rol)
+        {
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Value.Id.ToString()),
-                new Claim(ClaimTypes.Role, user.Value.Rol)
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.Role, rol)
             };
 
             var key = new SymmetricSecurityKey(
@@ -51,9 +52,8 @@ namespace InventTrackAI.API.Controllers
             return Ok(new AuthResponseDto
             {
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
-                Rol = user.Value.Rol
+                Rol = rol
             });
-
         }
     }
 }

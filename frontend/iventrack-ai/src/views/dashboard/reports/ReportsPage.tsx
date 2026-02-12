@@ -45,7 +45,8 @@ import {
 } from "@/components/ui/table";
 
 import { cn } from "@/lib/utils";
-import type { Product } from "@/types/dashboard";
+import { useProducts } from "@/services/products/useProducts";
+import type { Producto } from "@/types/api";
 
 type ReportType =
   | "high_rotation"
@@ -97,98 +98,37 @@ const reports: Report[] = [
   },
 ];
 
-// Mock report data
-const highRotationData = [
-  {
-    product: "Mouse Inalámbrico",
-    code: "PRD-004",
-    movements: 45,
-    percentage: 92,
-  },
-  {
-    product: "Teclado Mecánico RGB",
-    code: "PRD-003",
-    movements: 38,
-    percentage: 85,
-  },
-  { product: "Cable HDMI 2m", code: "PRD-007", movements: 32, percentage: 78 },
-  {
-    product: "Laptop Dell XPS 15",
-    code: "PRD-001",
-    movements: 28,
-    percentage: 72,
-  },
-  {
-    product: "Auriculares Bluetooth",
-    code: "PRD-005",
-    movements: 24,
-    percentage: 65,
-  },
-];
+// Mock report data (Empty until backend endpoint exists)
+interface RotationData {
+  product: string;
+  code: string;
+  movements: number;
+  percentage?: number;
+  daysWithoutMovement?: number;
+}
 
-const lowRotationData = [
-  {
-    product: "RAM DDR4 16GB",
-    code: "PRD-010",
-    movements: 2,
-    daysWithoutMovement: 35,
-  },
-  {
-    product: "SSD Samsung 1TB",
-    code: "PRD-009",
-    movements: 4,
-    daysWithoutMovement: 28,
-  },
-  {
-    product: "Webcam HD 1080p",
-    code: "PRD-006",
-    movements: 6,
-    daysWithoutMovement: 21,
-  },
-];
+interface ConsumptionData {
+  period: string;
+  entries: number;
+  exits: number;
+  balance: number;
+}
 
-const consumptionData = [
-  { period: "Semana 1", entries: 45, exits: 38, balance: 7 },
-  { period: "Semana 2", entries: 52, exits: 48, balance: 4 },
-  { period: "Semana 3", entries: 38, exits: 42, balance: -4 },
-  { period: "Semana 4", entries: 65, exits: 55, balance: 10 },
-];
-
-const stockVsDemandData = [
-  {
-    product: "Mouse Inalámbrico",
-    stock: 5,
-    demand: 30,
-    coverage: "0.5 semanas",
-  },
-  { product: "Webcam HD 1080p", stock: 2, demand: 15, coverage: "0.4 semanas" },
-  {
-    product: 'Monitor Samsung 27"',
-    stock: 8,
-    demand: 12,
-    coverage: "2.1 semanas",
-  },
-  {
-    product: "Teclado Mecánico RGB",
-    stock: 45,
-    demand: 25,
-    coverage: "5.6 semanas",
-  },
-];
+const highRotationData: RotationData[] = [];
+const lowRotationData: RotationData[] = [];
+const consumptionData: ConsumptionData[] = [];
 
 export default function ReportsPage() {
-  const products: Product[] = [
-    {
-      category: "",
-      code: "",
-      currentStock: 3,
-      id: "",
-      leadTime: 2,
-      name: "",
-      status: "active",
-      stockMin: 1,
-    },
-  ];
+  const { data: productsData } = useProducts();
+  const productList: Producto[] = Array.isArray(productsData) ? productsData : (productsData && typeof productsData === 'object' && 'data' in productsData ? (productsData as { data: Producto[] }).data : []);
+
+  // Calculate real stock vs demand using products
+  const stockVsDemandData = productList.map(p => ({
+    product: p.nombre,
+    stock: p.stockActual,
+    demand: p.stockMinimo, // Proxy for demand
+    coverage: p.stockActual > 0 ? (p.stockActual / (p.stockMinimo || 1)).toFixed(1) + "x" : "0"
+  }));
   const [periodFilter, setPeriodFilter] = useState("30");
   const [selectedReport, setSelectedReport] = useState<ReportType | null>(null);
 
@@ -513,7 +453,7 @@ export default function ReportsPage() {
             <div className="p-4 rounded-xl bg-secondary/30 border border-border/30 text-center">
               <Package className="w-6 h-6 text-primary mx-auto mb-2" />
               <p className="text-2xl font-bold text-foreground">
-                {products.length}
+                {productList.length}
               </p>
               <p className="text-xs text-muted-foreground">Total Productos</p>
             </div>
