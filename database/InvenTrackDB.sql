@@ -1,105 +1,85 @@
--- Crear la base de datos
-CREATE DATABASE InvenTrackDB;
+-- ============================================
+--   CREAR BASE DE DATOS
+-- ============================================
+CREATE DATABASE InventarioDB;
 GO
 
-USE InvenTrackDB;
+USE InventarioDB;
 GO
 
--- Tabla: Productos
-CREATE TABLE Productos (
+-- ============================================
+--   TABLA: Usuarios
+-- ============================================
+CREATE TABLE Usuarios (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Nombre NVARCHAR(100) NOT NULL,
-    Descripcion NVARCHAR(255),
-    StockActual INT NOT NULL,
-    StockMinimo INT NOT NULL,
-    FechaCreacion DATETIME DEFAULT GETDATE()
+    Email NVARCHAR(150) NOT NULL UNIQUE,
+    PasswordHash NVARCHAR(255) NOT NULL,
+    Rol NVARCHAR(50) NOT NULL,
+    Activo BIT NOT NULL DEFAULT 1,
+    FechaCreacion DATETIME NOT NULL DEFAULT GETDATE()
 );
 GO
 
--- Tabla: MovimientosInventario
+-- ============================================
+--   TABLA: Proveedores
+-- ============================================
+CREATE TABLE Proveedores (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre NVARCHAR(150) NOT NULL,
+    TiempoEntregaDias INT NOT NULL,
+    FechaCreacion DATETIME NOT NULL DEFAULT GETDATE()
+);
+GO
+
+-- ============================================
+--   TABLA: Productos
+-- ============================================
+CREATE TABLE Productos (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre NVARCHAR(150) NOT NULL,
+    Descripcion NVARCHAR(255),
+    StockActual INT NOT NULL DEFAULT 0,
+    StockMinimo INT NOT NULL DEFAULT 0,
+    FechaCreacion DATETIME NOT NULL DEFAULT GETDATE(),
+    ProveedorId INT NOT NULL,
+    PuntoReorden INT NOT NULL DEFAULT 0,
+    CONSTRAINT FK_Productos_Proveedores 
+        FOREIGN KEY (ProveedorId) REFERENCES Proveedores(Id)
+);
+GO
+
+-- ============================================
+--   TABLA: MovimientosInventario
+-- ============================================
 CREATE TABLE MovimientosInventario (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     ProductoId INT NOT NULL,
     UsuarioId INT NOT NULL,
-    Tipo NVARCHAR(10) CHECK (Tipo IN ('Entrada', 'Salida', 'Ajuste')),
-    Cantidad INT NOT NULL CHECK (Cantidad > 0),
+    Tipo NVARCHAR(50) NOT NULL,        -- Entrada / Salida
+    Cantidad INT NOT NULL,
     Fecha DATETIME NOT NULL DEFAULT GETDATE(),
     Observacion NVARCHAR(255),
 
     CONSTRAINT FK_Movimientos_Productos 
         FOREIGN KEY (ProductoId) REFERENCES Productos(Id),
 
-    CONSTRAINT FK_Movimientos_Usuarios
+    CONSTRAINT FK_Movimientos_Usuarios 
         FOREIGN KEY (UsuarioId) REFERENCES Usuarios(Id)
 );
-
 GO
 
--- Datos de prueba
-INSERT INTO Productos (Nombre, Descripcion, StockActual, StockMinimo)
-VALUES 
-('Arroz', 'Arroz blanco 5lb', 50, 10),
-('Aceite', 'Aceite vegetal 1L', 30, 5),
-('Azúcar', 'Azúcar refino 2lb', 40, 8);
-GO
-
-
-/* Crear tabla de Proveedores */
-CREATE TABLE Proveedores (
-    Id INT IDENTITY PRIMARY KEY,
-    Nombre NVARCHAR(100) NOT NULL,
-    TiempoEntregaDias INT NOT NULL,
-    FechaCreacion DATETIME DEFAULT GETDATE()
-);
-/* Modificar tabla de Producto */
-ALTER TABLE Productos
-ADD ProveedorId INT;
-
-ALTER TABLE Productos
-ADD CONSTRAINT FK_Productos_Proveedores
-FOREIGN KEY (ProveedorId) REFERENCES Proveedores(Id);
-
-/* Crear tabla de alertas */
-
+-- ============================================
+--   TABLA: Alertas
+-- ============================================
 CREATE TABLE Alertas (
-    Id INT IDENTITY PRIMARY KEY,
+    Id INT IDENTITY(1,1) PRIMARY KEY,
     ProductoId INT NOT NULL,
-    Mensaje NVARCHAR(200) NOT NULL,
-    Fecha DATETIME DEFAULT GETDATE(),
-    Leida BIT DEFAULT 0,
-    CONSTRAINT FK_Alertas_Productos
+    Mensaje NVARCHAR(255) NOT NULL,
+    Fecha DATETIME NOT NULL DEFAULT GETDATE(),
+    Leida BIT NOT NULL DEFAULT 0,
+
+    CONSTRAINT FK_Alertas_Productos 
         FOREIGN KEY (ProductoId) REFERENCES Productos(Id)
 );
-/* Datos de prueba */
-INSERT INTO Proveedores (Nombre, TiempoEntregaDias)
-VALUES ('Proveedor Central', 10);
-
-INSERT INTO Productos (
-    Nombre,
-    Descripcion,
-    StockActual,
-    StockMinimo,
-    FechaCreacion,
-    ProveedorId
-)
-VALUES (
-    'Arroz Especial',
-    'Producto de prueba para alerta de reorden',
-    5,      -- StockActual bajo
-    30,     -- StockMinimo alto
-    GETDATE(),
-    1       -- Id del proveedor
-);
-
-/* Modificando la tabla productos */
-ALTER TABLE Productos
-ADD PuntoReorden INT NOT NULL DEFAULT 0;
-
-SELECT * FROM MovimientosInventario
-SELECT * FROM Alertas;
-SELECT * FROM Productos;SSS
-SELECT * FROM Proveedores;
-
-UPDATE Productos 
-SET ProveedorId = 1
-WHERE ProveedorId IS NULL;
+GO
