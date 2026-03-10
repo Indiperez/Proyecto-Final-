@@ -1,12 +1,11 @@
-﻿using InventTrackAI.API.Data;
+using InventTrackAI.API.Data;
 using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Models;
-using InventTrackAI.API.Repositories.Interfaces;
-using Microsoft.Data.SqlClient;
+using MySql.Data.MySqlClient;
 
 namespace InventTrackAI.API.Repositories
 {
-    public class ProductoRespository 
+    public class ProductoRespository
     {
         private readonly DbConnection _db;
 
@@ -23,8 +22,8 @@ namespace InventTrackAI.API.Repositories
 
             using (var connection = _db.GetConnection())
             {
-                var query = "Select * From Productos";
-                var command = new SqlCommand(query, connection);
+                var query = "SELECT * FROM Productos";
+                var command = new MySqlCommand(query, connection);
 
                 connection.Open();
                 var reader = command.ExecuteReader();
@@ -41,20 +40,63 @@ namespace InventTrackAI.API.Repositories
         {
             using (var connection = _db.GetConnection())
             {
-                var query = @"INSERT INTO Productos (Nombre, Descripcion, StockActual, StockMinimo, FechaCreacion)
-                Values(@Nombre, @Descripcion, @StockActual, @StockMinimo, GETDATE())
+                // Get default ProveedorId if not provided
+                int? proveedorId = dto.ProveedorId ?? GetDefaultProveedorId();
+
+                // Calculate PuntoReorden if not provided
+                int puntoReorden = dto.PuntoReorden ?? CalculatePuntoReorden(dto.StockMinimo);
+
+                var query = @"INSERT INTO Productos (Nombre, Descripcion, StockActual, StockMinimo, FechaCreacion, ProveedorId, PuntoReorden)
+                Values(@Nombre, @Descripcion, @StockActual, @StockMinimo, NOW(), @ProveedorId, @PuntoReorden)
                 ";
 
-                var command = new SqlCommand(query, connection);
+                var command = new MySqlCommand(query, connection);
 
                 command.Parameters.AddWithValue("@Nombre", dto.Nombre);
                 command.Parameters.AddWithValue("@Descripcion", (object)dto.Descripcion ?? DBNull.Value);
                 command.Parameters.AddWithValue("@StockActual", dto.StockActual);
                 command.Parameters.AddWithValue("@StockMinimo", dto.StockMinimo);
 
+                // Handle nullable ProveedorId
+                if (proveedorId.HasValue)
+                {
+                    command.Parameters.AddWithValue("@ProveedorId", proveedorId.Value);
+                }
+                else
+                {
+                    command.Parameters.AddWithValue("@ProveedorId", DBNull.Value);
+                }
+
+                command.Parameters.AddWithValue("@PuntoReorden", puntoReorden);
+
                 connection.Open();
                 command.ExecuteNonQuery();
             }
+        }
+
+        private int? GetDefaultProveedorId()
+        {
+            using (var connection = _db.GetConnection())
+            {
+                var query = "SELECT Id FROM Proveedores ORDER BY Id ASC LIMIT 1";
+                var command = new MySqlCommand(query, connection);
+
+                connection.Open();
+                var result = command.ExecuteScalar();
+
+                if (result != null)
+                    return Convert.ToInt32(result);
+
+                // If no proveedor exists, return null
+                return null;
+            }
+        }
+
+        private int CalculatePuntoReorden(int stockMinimo)
+        {
+            // Simple calculation: PuntoReorden = StockMinimo * 2
+            // This can be adjusted based on business logic
+            return stockMinimo * 2;
         }
 
         public bool Update(int id, ProductoUpdateDto dto)
@@ -67,7 +109,7 @@ namespace InventTrackAI.API.Repositories
                                   StockActual = @StockActual,
                                   StockMinimo = @StockMinimo
                               WHERE Id = @Id";
-                var command = new SqlCommand(query, connection);
+                var command = new MySqlCommand(query, connection);
 
                 command.Parameters.AddWithValue("@Id", id);
                 command.Parameters.AddWithValue("@Nombre", dto.Nombre);
@@ -86,7 +128,7 @@ namespace InventTrackAI.API.Repositories
             using (var connection = _db.GetConnection())
             {
                 var query = "DELETE FROM Productos WHERE Id = @Id";
-                var command = new SqlCommand(query, connection);
+                var command = new MySqlCommand(query, connection);
                 command.Parameters.AddWithValue("@Id", id);
                 connection.Open();
                 var rowsAffected = command.ExecuteNonQuery();
@@ -102,7 +144,7 @@ namespace InventTrackAI.API.Repositories
             {
                 var query = "SELECT * FROM Productos WHERE StockActual <= StockMinimo";
 
-                var command = new SqlCommand(query, connection);
+                var command = new MySqlCommand(query, connection);
                 connection.Open();
 
 
@@ -122,9 +164,9 @@ namespace InventTrackAI.API.Repositories
             var productos = new List<Producto>();
             using (var connection = _db.GetConnection())
             {
-                var query = @"SELECT * FROM Productos WHERE FechaCreacion >= DATEADD(DAY, -30, GETDATE())
+                var query = @"SELECT * FROM Productos WHERE FechaCreacion >= DATE_SUB(NOW(), INTERVAL 30 DAY)
                                AND StockActual <= StockMinimo";
-                var command = new SqlCommand(query, connection);
+                var command = new MySqlCommand(query, connection);
                 connection.Open();
 
                 var reader = command.ExecuteReader();
@@ -143,9 +185,9 @@ namespace InventTrackAI.API.Repositories
             var productos = new List<Producto>();
             using (var connection = _db.GetConnection())
             {
-                var query = @"SELECT * FROM Productos WHERE FechaCreacion >= DATEADD(DAY, -60, GETDATE())
+                var query = @"SELECT * FROM Productos WHERE FechaCreacion >= DATE_SUB(NOW(), INTERVAL 60 DAY)
                             AND StockActual > StockMinimo";
-                var command = new SqlCommand(query, connection);
+                var command = new MySqlCommand(query, connection);
                 connection.Open();
 
                 var reader = command.ExecuteReader();
@@ -163,28 +205,27 @@ namespace InventTrackAI.API.Repositories
             var resultado = new List<PuntoReordenDto>();
             using (var connection = _db.GetConnection())
             {
-                // NO traemos PuntoReorden de la DB, porque no existe
                 var query = @"
-            SELECT 
-                p.Id, 
-                p.Nombre, 
-                p.StockActual, 
-                p.StockMinimo, 
-                pr.TiempoEntregaDias 
+            SELECT
+                p.Id,
+                p.Nombre,
+                p.StockActual,
+                p.StockMinimo,
+                pr.TiempoEntregaDias
             FROM Productos p
             INNER JOIN Proveedores pr ON p.ProveedorId = pr.Id";
 
-                var command = new SqlCommand(query, connection);
+                var command = new MySqlCommand(query, connection);
                 connection.Open();
 
                 var reader = command.ExecuteReader();
 
                 while (reader.Read())
                 {
-                
+
                     // Asumimos que StockMinimo representa la necesidad de 30 días
-                    int stockMinimo = (int)reader["StockMinimo"];
-                    int tiempoEntrega = (int)reader["TiempoEntregaDias"];
+                    int stockMinimo = Convert.ToInt32(reader["StockMinimo"]);
+                    int tiempoEntrega = Convert.ToInt32(reader["TiempoEntregaDias"]);
 
                     // Consumo diario estimado
                     int consumoDiario = stockMinimo / 30;
@@ -192,19 +233,18 @@ namespace InventTrackAI.API.Repositories
 
                     // Punto de reorden = Consumo Diario * Días de espera
                     int puntoReordenCalculado = consumoDiario * tiempoEntrega;
-                    // ---------------------
 
-                    var stockActual = (int)reader["StockActual"];
+                    var stockActual = Convert.ToInt32(reader["StockActual"]);
 
                     resultado.Add(new PuntoReordenDto
                     {
-                        ProductoId = (int)reader["Id"],
+                        ProductoId = Convert.ToInt32(reader["Id"]),
                         Producto = reader["Nombre"].ToString(),
                         StockActual = stockActual,
                         StockMinimo = stockMinimo,
-                        PuntoReorden = puntoReordenCalculado, 
+                        PuntoReorden = puntoReordenCalculado,
                         TiempoEntregaDias = tiempoEntrega,
-                        Reordenar = stockActual <= puntoReordenCalculado 
+                        Reordenar = stockActual <= puntoReordenCalculado
                     });
                 }
                 return resultado;
@@ -212,7 +252,7 @@ namespace InventTrackAI.API.Repositories
         }
 
 
-        private Producto MapProducto(SqlDataReader reader)
+        private Producto MapProducto(MySqlDataReader reader)
         {
             return new Producto
             {

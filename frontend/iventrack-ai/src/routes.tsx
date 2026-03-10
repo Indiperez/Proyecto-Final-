@@ -12,6 +12,7 @@ import AnalysisPage from "./views/dashboard/analysis/AnalysisPage";
 import AlertsPage from "./views/dashboard/alerts/AlertsPage";
 import ReportsPage from "./views/dashboard/reports/ReportsPage";
 import SettingsPage from "./views/dashboard/settings/SettingsPage";
+import { TestPage } from "./views/TestPage";
 
 export const Router = () => {
   return (
@@ -34,6 +35,8 @@ export const Router = () => {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
+
+        <Route path="/test" element={<TestPage />} />
       </Routes>
     </BrowserRouter>
   );

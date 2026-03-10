@@ -4,6 +4,7 @@ const BASE_URL = '/api';
 
 export const AUTH = {
   LOGIN: `${BASE_URL}/auth/login`,
+  REGISTER: `${BASE_URL}/auth/register`,
 } as const;
 
 export const USUARIO = {
@@ -12,6 +13,7 @@ export const USUARIO = {
   CHANGE_STATUS: (id: number) => `${BASE_URL}/usuario/${id}/estado`,
   CHANGE_ROLE: (id: number) => `${BASE_URL}/usuario/${id}/rol`,
   CHANGE_PASSWORD: `${BASE_URL}/usuario/cambiar-password`,
+  PROFILE: `${BASE_URL}/usuario/perfil`,
 } as const;
 
 export const PRODUCTO = {

@@ -12,7 +12,7 @@ namespace InventTrackAI.API.Controllers
     public class UsuarioController : Controller
     {
         private readonly IUsuarioRepository _repository;
-    
+
         public UsuarioController(IUsuarioRepository reposository)
         {
             _repository = reposository;
@@ -27,11 +27,11 @@ namespace InventTrackAI.API.Controllers
 
             if (userIdClaim == null)
             {
-                return Unauthorized(); 
+                return Unauthorized();
             }
 
             var userId = int.Parse(userIdClaim.Value);
-           
+
             var usuarios = _repository.GetAll();
             return Ok(usuarios);
         }
@@ -66,7 +66,7 @@ namespace InventTrackAI.API.Controllers
 
             var userId = int.Parse(userIdClaim.Value);
 
-           bool actualizado =  _repository.CambiarEstado(id, dto.Activo);
+            bool actualizado = _repository.CambiarEstado(id, dto.Activo);
 
             if (!actualizado)
             {
@@ -94,7 +94,7 @@ namespace InventTrackAI.API.Controllers
                 return BadRequest("El rol no puede estar vacío.");
             }
 
-           
+
             bool actualizado = _repository.CambiarRol(id, dto.Rol);
 
             if (!actualizado)
@@ -103,6 +103,33 @@ namespace InventTrackAI.API.Controllers
             }
 
             return NoContent();
+        }
+
+        [Authorize]
+        [HttpGet("perfil")]
+        public IActionResult ObtenerPerfil()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            var userId = int.Parse(userIdClaim.Value);
+
+            var usuario = _repository.ObtenerPorId(userId);
+
+            if (usuario == null)
+            {
+                return NotFound("Usuario no encontrado.");
+            }
+
+            return Ok(new
+            {
+                id = usuario.Id,
+                nombre = usuario.Nombre,
+                email = usuario.Email,
+                rol = usuario.Rol,
+                activo = usuario.Activo,
+                fechaCreacion = usuario.FechaCrecion
+            });
         }
 
         [Authorize]
@@ -120,7 +147,7 @@ namespace InventTrackAI.API.Controllers
             {
                 return NotFound("Usuario no encontrado.");
             }
-       
+
             if (!BCrypt.Net.BCrypt.Verify(dto.PasswordActual, usuario.PasswordHash))
                 return BadRequest("Contraseña actual incorrecta");
 

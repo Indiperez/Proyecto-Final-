@@ -32,6 +32,6 @@ export function useLogout() {
     return () => {
         AuthApi.logout();
         toast.success("Sesión cerrada exitosamente");
-        navigate("/login");
+        navigate("/auth/login");
     };
 }

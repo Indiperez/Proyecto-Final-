@@ -38,9 +38,21 @@ namespace InventTrackAI.API.Controllers
             if (dto.StockMinimo > dto.StockActual)
                 return BadRequest(new { message = "El stock actual no puede ser menor al stock minimo." });
 
-            _repository.Create(dto);
-            return Ok(new { message = "Producto creado con exito!" });
-
+            try
+            {
+                _repository.Create(dto);
+                return Ok(new { message = "Producto creado con exito!" });
+            }
+            catch (Exception ex)
+            {
+                // Return detailed error for debugging
+                return StatusCode(500, new
+                {
+                    message = "Error al crear el producto en la base de datos.",
+                    error = ex.Message,
+                    stackTrace = ex.StackTrace
+                });
+            }
         }
 
         // [Authorize(Roles = "Admin")]
