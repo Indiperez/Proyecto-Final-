@@ -1,8 +1,8 @@
-﻿using InventTrackAI.API.Data;
+using InventTrackAI.API.Data;
 using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Models;
 using InventTrackAI.API.Repositories.Interfaces;
-using Microsoft.Data.SqlClient;
+using MySql.Data.MySqlClient;
 
 namespace InventTrackAI.API.Repositories
 {
@@ -20,7 +20,7 @@ namespace InventTrackAI.API.Repositories
             using(var conn = _db.GetConnection())
             {
                 var query = @"UPDATE Usuarios SET PasswordHash = @PasswordHash WHERE Id = @Id";
-                var cmd = new SqlCommand(query, conn);
+                var cmd = new MySqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@PasswordHash", nuevaPassword);
                 cmd.Parameters.AddWithValue("@Id", id);
                 conn.Open();
@@ -33,11 +33,11 @@ namespace InventTrackAI.API.Repositories
             using (var conn = _db.GetConnection())
             {
                 var query = @"UPDATE Usuarios SET Activo = @Activo WHERE Id = @Id";
-                var cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@Activo", estado);
+                var cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@Activo", estado ? 1 : 0);
                 cmd.Parameters.AddWithValue("@Id", id);
                 conn.Open();
-               
+
                 int filasAfectadas = cmd.ExecuteNonQuery();
 
                 return filasAfectadas > 0;
@@ -50,7 +50,7 @@ namespace InventTrackAI.API.Repositories
             using(var conn = _db.GetConnection())
             {
                 var query = @"UPDATE Usuarios SET Rol = @Rol WHERE Id = @Id";
-                var cmd = new SqlCommand(query, conn);
+                var cmd = new MySqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@Rol", nuevoRol);
                 cmd.Parameters.AddWithValue("@Id", id);
                 conn.Open();
@@ -59,22 +59,20 @@ namespace InventTrackAI.API.Repositories
 
                 return filasAfectadas > 0;
             }
-            
-
         }
 
         public void CrearUsuario(Usuario usuario)
         {
             using (var conn = _db.GetConnection())
             {
-                var query = @"INSERT INTO Usuarios (Nombre, Email, PasswordHash, Rol, Activo, FechaCreacion) 
-                              VALUES (@Nombre, @Email, @PasswordHash, @Rol, @Activo, GETDATE())";
-                var cmd = new SqlCommand(query, conn);
+                var query = @"INSERT INTO Usuarios (Nombre, Email, PasswordHash, Rol, Activo, FechaCreacion)
+                              VALUES (@Nombre, @Email, @PasswordHash, @Rol, @Activo, NOW())";
+                var cmd = new MySqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@Nombre", usuario.Nombre);
                 cmd.Parameters.AddWithValue("@Email", usuario.Email);
                 cmd.Parameters.AddWithValue("@PasswordHash", usuario.PasswordHash);
                 cmd.Parameters.AddWithValue("@Rol", usuario.Rol);
-                cmd.Parameters.AddWithValue("@Activo", usuario.Activo);
+                cmd.Parameters.AddWithValue("@Activo", usuario.Activo ? 1 : 0);
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
@@ -85,7 +83,7 @@ namespace InventTrackAI.API.Repositories
             using (var conn = _db.GetConnection())
             {
                 var query = @"SELECT Id, Nombre, Email, Rol, Activo, FechaCreacion FROM Usuarios";
-                var cmd = new SqlCommand(query, conn);
+                var cmd = new MySqlCommand(query, conn);
                 conn.Open();
                 var reader = cmd.ExecuteReader();
                 var usuarios = new List<Usuario>();
@@ -93,12 +91,12 @@ namespace InventTrackAI.API.Repositories
                 {
                     usuarios.Add(new Usuario
                     {
-                        Id = (int)reader["Id"],
+                        Id = Convert.ToInt32(reader["Id"]),
                         Nombre = reader["Nombre"].ToString(),
                         Email = reader["Email"].ToString(),
                         Rol = reader["Rol"].ToString(),
-                        Activo = (bool)reader["Activo"],
-                        FechaCrecion = (DateTime)reader["FechaCreacion"]
+                        Activo = Convert.ToInt32(reader["Activo"]) == 1,
+                        FechaCrecion = Convert.ToDateTime(reader["FechaCreacion"])
                     });
                 }
                 return usuarios;
@@ -110,7 +108,7 @@ namespace InventTrackAI.API.Repositories
             using (var conn = _db.GetConnection())
             {
                 var query = @"SELECT Id, PasswordHash, Rol FROM Usuarios WHERE Email = @Email AND Activo = 1";
-                var cmd = new SqlCommand(query, conn);
+                var cmd = new MySqlCommand(query, conn);
 
                 cmd.Parameters.AddWithValue("@Email", email);
 
@@ -121,7 +119,7 @@ namespace InventTrackAI.API.Repositories
                 if (!reader.Read()) return null;
 
                 return (
-                    (int)reader["Id"],
+                    Convert.ToInt32(reader["Id"]),
                     reader["PasswordHash"].ToString(),
                     reader["Rol"].ToString()
                     );
@@ -133,7 +131,7 @@ namespace InventTrackAI.API.Repositories
             using (var conn = _db.GetConnection())
             {
                 var query = @"SELECT Id, Nombre, Email, PasswordHash, Rol, Activo FROM Usuarios WHERE Id = @Id";
-                var cmd = new SqlCommand(query, conn);
+                var cmd = new MySqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@Id", id);
                 conn.Open();
                 var reader = cmd.ExecuteReader();
@@ -141,12 +139,12 @@ namespace InventTrackAI.API.Repositories
                 {
                     return new Usuario
                     {
-                        Id = (int)reader["Id"],
+                        Id = Convert.ToInt32(reader["Id"]),
                         Nombre = reader["Nombre"].ToString(),
                         Email = reader["Email"].ToString(),
                         PasswordHash = reader["PasswordHash"].ToString(),
                         Rol = reader["Rol"].ToString(),
-                        Activo = (bool)reader["Activo"]
+                        Activo = Convert.ToInt32(reader["Activo"]) == 1
                     };
                 }
                 return null;

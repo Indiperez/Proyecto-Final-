@@ -1,7 +1,7 @@
-﻿using InventTrackAI.API.Data;
+using InventTrackAI.API.Data;
 using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Models;
-using Microsoft.Data.SqlClient;
+using MySql.Data.MySqlClient;
 
 namespace InventTrackAI.API.Repositories
 {
@@ -22,7 +22,7 @@ namespace InventTrackAI.API.Repositories
             using (var connection = _db.GetConnection())
             {
                 var query = "SELECT * FROM Proveedores";
-                var command = new SqlCommand(query, connection);
+                var command = new MySqlCommand(query, connection);
                 connection.Open();
 
                 var reader = command.ExecuteReader();
@@ -41,9 +41,9 @@ namespace InventTrackAI.API.Repositories
             using (var connection = _db.GetConnection())
             {
                 var query = @"INSERT INTO Proveedores (Nombre, TiempoEntregaDias, FechaCreacion)
-                            Values (@Nombre, @TiempoEntregaDias, GETDATE())";
+                            Values (@Nombre, @TiempoEntregaDias, NOW())";
 
-                var cmd = new SqlCommand(query, connection);
+                var cmd = new MySqlCommand(query, connection);
 
                 cmd.Parameters.AddWithValue("@Nombre", dto.Nombre);
                 cmd.Parameters.AddWithValue("@TiempoEntregaDias", dto.TiempoEntregaDias);
@@ -63,7 +63,7 @@ namespace InventTrackAI.API.Repositories
                                     TiempoEntregaDias = @TiempoEntregaDias
                                 WHERE Id = @Id";
 
-                var cmd = new SqlCommand(query, conn);
+                var cmd = new MySqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@Id", id);
                 cmd.Parameters.AddWithValue("@Nombre", dto.Nombre);
                 cmd.Parameters.AddWithValue("@TiempoEntregaDias", dto.TiempoEntregaDias);
@@ -81,7 +81,7 @@ namespace InventTrackAI.API.Repositories
             using(var conn = _db.GetConnection())
             {
                 var query = "DELETE FROM Proveedores WHERE Id = @id";
-                var cmd = new SqlCommand(query, conn);
+                var cmd = new MySqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@id", id);
                 conn.Open();
                 var rowAffect = cmd.ExecuteNonQuery();
@@ -89,7 +89,7 @@ namespace InventTrackAI.API.Repositories
             }
         }
 
-        private Proveedor MapProveedor(SqlDataReader reader)
+        private Proveedor MapProveedor(MySqlDataReader reader)
         {
             return new Proveedor
             {

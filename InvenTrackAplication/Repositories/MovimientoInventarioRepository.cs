@@ -1,7 +1,7 @@
-﻿using InventTrackAI.API.Data;
+using InventTrackAI.API.Data;
 using InventTrackAI.API.Models;
 using InventTrackAI.API.Repositories.Interfaces;
-using Microsoft.Data.SqlClient;
+using MySql.Data.MySqlClient;
 
 namespace InventTrackAI.API.Repositories
 {
@@ -24,7 +24,7 @@ namespace InventTrackAI.API.Repositories
             try
             {
                 // 1. Verificar stock actual y existencia del producto
-                var getStock = new SqlCommand(
+                var getStock = new MySqlCommand(
                     "SELECT StockActual FROM Productos WHERE Id = @ProductoId",
                     connection, transaction);
 
@@ -37,7 +37,7 @@ namespace InventTrackAI.API.Repositories
                     throw new Exception("El producto no existe");
                 }
 
-                int stockActualDB = (int)result;
+                int stockActualDB = Convert.ToInt32(result);
 
                 // 2. Validar salida
                 if (movimiento.Tipo == "Salida" && stockActualDB < movimiento.Cantidad)
@@ -45,9 +45,9 @@ namespace InventTrackAI.API.Repositories
                     throw new Exception("Stock insuficiente para realizar la salida");
                 }
 
-                // 3. Insertar movimiento 
-                var insertMovimiento = new SqlCommand(@"
-                    INSERT INTO MovimientosInventario 
+                // 3. Insertar movimiento
+                var insertMovimiento = new MySqlCommand(@"
+                    INSERT INTO MovimientosInventario
                     (ProductoId, UsuarioId, Tipo, Cantidad, Observacion)
                     VALUES (@ProductoId, @UsuarioId, @Tipo, @Cantidad, @Observacion)",
                     connection, transaction);
@@ -62,10 +62,10 @@ namespace InventTrackAI.API.Repositories
                 insertMovimiento.ExecuteNonQuery();
 
                 // 4. Actualizar stock
-                var updateStock = new SqlCommand(@"
+                var updateStock = new MySqlCommand(@"
                     UPDATE Productos
-                    SET StockActual = 
-                        CASE 
+                    SET StockActual =
+                        CASE
                             WHEN @Tipo = 'Entrada' THEN StockActual + @Cantidad
                             WHEN @Tipo = 'Salida' THEN StockActual - @Cantidad
                             WHEN @Tipo = 'Ajuste' THEN @Cantidad
@@ -79,14 +79,13 @@ namespace InventTrackAI.API.Repositories
 
                 updateStock.ExecuteNonQuery();
 
-                // 5. --- NUEVA LÓGICA: CALCULAR Y GUARDAR PUNTO DE REORDEN ---
+                // 5. --- CALCULAR Y GUARDAR PUNTO DE REORDEN ---
 
                 // A. Obtener el tiempo de entrega del proveedor y el Stock Minimo
-                // --- CAMBIO EN TU CÓDIGO (Paso 5.A) ---
-                var getDatos = new SqlCommand(@"
-                        SELECT ISNULL(pr.TiempoEntregaDias, 0) AS TiempoEntregaDias, p.StockMinimo
+                var getDatos = new MySqlCommand(@"
+                        SELECT IFNULL(pr.TiempoEntregaDias, 0) AS TiempoEntregaDias, p.StockMinimo
                         FROM Productos p
-                        LEFT JOIN Proveedores pr ON p.ProveedorId = pr.Id 
+                        LEFT JOIN Proveedores pr ON p.ProveedorId = pr.Id
                         WHERE p.Id = @ProductoId", connection, transaction);
                 getDatos.Parameters.AddWithValue("@ProductoId", movimiento.ProductoId);
 
@@ -101,15 +100,14 @@ namespace InventTrackAI.API.Repositories
                 readerDatos.Close();
 
                 // B. Calcular punto de reorden (Fórmula: Consumo Diario * Días de Espera)
-                // Asumimos que stockMinimo representa la necesidad para un periodo, ej. 30 días
                 int consumoDiario = stockMinimo / 30;
                 if (consumoDiario == 0) consumoDiario = 1;
                 int nuevoPuntoReorden = consumoDiario * tiempoEntrega;
 
                 // C. Guardar el cálculo en la tabla Productos
-                var updatePuntoReorden = new SqlCommand(@"
-                    UPDATE Productos 
-                    SET PuntoReorden = @NuevoPuntoReorden 
+                var updatePuntoReorden = new MySqlCommand(@"
+                    UPDATE Productos
+                    SET PuntoReorden = @NuevoPuntoReorden
                     WHERE Id = @ProductoId", connection, transaction);
 
                 updatePuntoReorden.Parameters.AddWithValue("@NuevoPuntoReorden", nuevoPuntoReorden);
@@ -118,8 +116,7 @@ namespace InventTrackAI.API.Repositories
 
                 // 6. --- ALERTA DE STOCK MINIMO Y PUNTO DE REORDEN ---
 
-                // Re-obtener el stock actual final después de las actualizaciones
-                var getProductoFinal = new SqlCommand(@"
+                var getProductoFinal = new MySqlCommand(@"
                     SELECT StockActual, StockMinimo, PuntoReorden
                     FROM Productos
                     WHERE Id = @ProductoId",
@@ -143,10 +140,10 @@ namespace InventTrackAI.API.Repositories
 
                 if (alertaStockMinimo || alertaReorden)
                 {
-                    var insertAlerta = new SqlCommand(@"
+                    var insertAlerta = new MySqlCommand(@"
                             INSERT INTO Alertas
                             (ProductoId, Mensaje, Fecha, Leida)
-                            VALUES (@ProductoId, @Mensaje, GETDATE(), 0)", // 0 para 'No leída'
+                            VALUES (@ProductoId, @Mensaje, NOW(), 0)",
                             connection, transaction);
 
                     insertAlerta.Parameters.AddWithValue("@ProductoId", movimiento.ProductoId);

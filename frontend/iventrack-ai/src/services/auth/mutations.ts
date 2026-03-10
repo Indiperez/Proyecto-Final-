@@ -1,18 +1,19 @@
-import { createAccount } from "@/api/AuthApi";
+import { register } from "@/api/AuthApi";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-const navigate = useNavigate();
-
 export const useCreateAccount = () => {
+  const navigate = useNavigate();
+
   return useMutation({
-    mutationFn: createAccount,
+    mutationFn: register,
     onSuccess: () => {
+      toast.success("Cuenta creada exitosamente. Inicia sesión.");
       navigate("/auth/login");
     },
-    onError: (error) => {
-      toast.error(error.message);
+    onError: (error: Error) => {
+      toast.error(error.message || "Error al crear la cuenta");
     },
   });
 };

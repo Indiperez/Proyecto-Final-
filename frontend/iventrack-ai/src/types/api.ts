@@ -55,6 +55,8 @@ export interface CreateProductoRequest {
     descripcion?: string;
     stockActual: number;
     stockMinimo: number;
+    proveedorId?: number;
+    puntoReorden?: number;
 }
 
 export interface UpdateProductoRequest {

@@ -1,6 +1,6 @@
-﻿using InventTrackAI.API.Data;
+using InventTrackAI.API.Data;
 using InventTrackAI.API.DTOs;
-using Microsoft.Data.SqlClient;
+using MySql.Data.MySqlClient;
 
 namespace InventTrackAI.API.Repositories
 {
@@ -17,18 +17,17 @@ namespace InventTrackAI.API.Repositories
         {
             using var conn = _db.GetConnection();
             var query = @"
-                IF NOT EXISTS (SELECT 1 FROM Alertas WHERE ProductoId = @ProductoId AND Leida = 0)
-                BEGIN
-                    INSERT INTO Alertas (ProductoId, Mensaje)
-                    VALUES (@ProductoId, @Mensaje)
-                END";
+                INSERT INTO Alertas (ProductoId, Mensaje)
+                SELECT @ProductoId, @Mensaje FROM DUAL
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM Alertas WHERE ProductoId = @ProductoId AND Leida = 0
+                )";
 
-            var cmd = new SqlCommand(query, conn);
+            var cmd = new MySqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@ProductoId", productoId);
             cmd.Parameters.AddWithValue("@Mensaje", mensaje);
             conn.Open();
             cmd.ExecuteNonQuery();
-
         }
 
         public List<AlertaDto> GetPendientes()
@@ -38,18 +37,18 @@ namespace InventTrackAI.API.Repositories
 
             var query = "SELECT * FROM Alertas WHERE Leida = 0";
 
-            var cmd = new SqlCommand(query, conn);
+            var cmd = new MySqlCommand(query, conn);
             conn.Open();
             var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
                 alertas.Add(new AlertaDto
                 {
-                    Id = (int)reader["Id"],
-                    ProductoId = (int)reader["ProductoId"],
-                    Mensaje = (string)reader["Mensaje"],
-                    Fecha = (DateTime)reader["Fecha"],
-                    Leida = (bool)reader["Leida"]
+                    Id = Convert.ToInt32(reader["Id"]),
+                    ProductoId = Convert.ToInt32(reader["ProductoId"]),
+                    Mensaje = reader["Mensaje"].ToString(),
+                    Fecha = Convert.ToDateTime(reader["Fecha"]),
+                    Leida = Convert.ToInt32(reader["Leida"]) == 1
                 });
             }
             return alertas;
@@ -59,13 +58,10 @@ namespace InventTrackAI.API.Repositories
         {
             using var conn = _db.GetConnection();
             var query = "UPDATE Alertas SET Leida = 1 WHERE Id = @Id";
-            var cmd = new SqlCommand(query, conn);
+            var cmd = new MySqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@Id", id);
             conn.Open();
             cmd.ExecuteNonQuery();
         }
-
-
-
     }
 }

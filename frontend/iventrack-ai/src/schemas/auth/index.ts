@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const roles = ["OPERATOR", "ADMIN"] as const;
+export const roles = ["Operador", "Admin"] as const;
 
 export const authSchema = z.object({
   nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),

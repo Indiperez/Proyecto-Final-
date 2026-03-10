@@ -57,14 +57,19 @@ export function useCreateProduct() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: CreateProductoRequest) => ProductsApi.createProduct(data),
+        mutationFn: (data: CreateProductoRequest) => {
+            console.log('useCreateProduct mutationFn called with:', data);
+            return ProductsApi.createProduct(data);
+        },
         onSuccess: (response) => {
+            console.log('useCreateProduct onSuccess:', response);
             if (!response) return;
             queryClient.invalidateQueries({ queryKey: productKeys.all });
             // Se asume que el mensaje viene directo en el objeto (no en .data.message)
             toast.success(response.message || "Producto creado exitosamente");
         },
         onError: (error: AxiosError<ApiError>) => {
+            console.error('useCreateProduct onError:', error);
             toast.error(error.response?.data?.message || "Error al crear producto");
         },
     });

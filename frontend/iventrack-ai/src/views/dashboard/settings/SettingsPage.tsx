@@ -1,4 +1,5 @@
-import { useState } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useEffect } from "react";
 import {
   User,
   Shield,
@@ -37,6 +38,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useQuery } from "@tanstack/react-query";
+import { getCurrentUserProfile } from "@/api/AuthApi";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 
@@ -73,8 +77,21 @@ const mockUsers = [
 ];
 
 export default function SettingsPage() {
-  const user = { name: "", role: "", email: "" };
-  const isAdmin = user?.role === "admin";
+  // Fetch current user profile from database
+  const { data: userProfile, isLoading, error } = useQuery({
+    queryKey: ['user-profile'],
+    queryFn: getCurrentUserProfile,
+  });
+
+  // Map API response to expected format
+  const user = userProfile ? {
+    name: userProfile.nombre,
+    role: userProfile.rol,
+    email: userProfile.email,
+    activo: userProfile.activo
+  } : { name: "", role: "", email: "", activo: true };
+
+  const isAdmin = user?.role === "Admin";
 
   const [profileData, setProfileData] = useState({
     name: user?.name || "",

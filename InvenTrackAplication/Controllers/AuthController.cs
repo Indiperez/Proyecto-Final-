@@ -1,5 +1,7 @@
-﻿using InventTrackAI.API.DTOs;
+using InventTrackAI.API.DTOs;
+using InventTrackAI.API.Models;
 using InventTrackAI.API.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -24,9 +26,39 @@ namespace InventTrackAI.API.Controllers
         [HttpPost("login")]
         public IActionResult Login(LoginDto dto)
         {
-            // --- BYPASS AUTHENTICATION ---
-            // Accept any credentials and log in as Admin
-            return GenerateToken(1, "Admin");
+            var usuario = _repositorio.GetByEmail(dto.Email);
+
+            if (usuario == null)
+                return Unauthorized(new { message = "Credenciales inválidas" });
+
+            if (!BCrypt.Net.BCrypt.Verify(dto.Password, usuario.Value.PasswordHash))
+                return Unauthorized(new { message = "Credenciales inválidas" });
+
+            return GenerateToken(usuario.Value.Id, usuario.Value.Rol);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public IActionResult Register([FromBody] CrearUsuarioDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Nombre) || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+                return BadRequest(new { message = "Todos los campos son obligatorios." });
+
+            var existente = _repositorio.GetByEmail(dto.Email);
+            if (existente != null)
+                return BadRequest(new { message = "Ya existe un usuario con ese correo." });
+
+            var usuario = new Usuario
+            {
+                Nombre = dto.Nombre,
+                Email = dto.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                Rol = dto.Rol ?? "Operador",
+                Activo = true,
+            };
+
+            _repositorio.CrearUsuario(usuario);
+            return Ok(new { message = "Usuario creado exitosamente." });
         }
 
         private IActionResult GenerateToken(int userId, string rol)

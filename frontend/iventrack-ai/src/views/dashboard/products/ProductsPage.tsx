@@ -69,14 +69,26 @@ export default function ProductsPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
+        console.log('handleSubmit called with:', { formData, editingProduct });
+        console.log('createMutation:', createMutation);
+        console.log('updateMutation:', updateMutation);
+
         if (editingProduct) {
+            console.log('Updating product:', editingProduct.id);
             updateMutation.mutate(
                 { id: editingProduct.id, data: formData },
                 { onSuccess: closeModals }
             );
         } else {
+            console.log('Creating new product');
             createMutation.mutate(formData, {
-                onSuccess: closeModals,
+                onSuccess: (response) => {
+                    console.log('Product created successfully:', response);
+                    closeModals();
+                },
+                onError: (error) => {
+                    console.error('Product creation failed:', error);
+                }
             });
         }
     };
@@ -138,43 +150,78 @@ export default function ProductsPage() {
             </div>
 
             {/* Tabla de Productos */}
-            <div className="bg-white rounded-lg shadow overflow-hidden border">
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
                 <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nombre</TableHead>
-                            <TableHead>Stock Actual</TableHead>
-                            <TableHead>Stock Mínimo</TableHead>
-                            <TableHead className="text-right">Acciones</TableHead>
+                    <TableHeader className="bg-gray-50">
+                        <TableRow className="hover:bg-gray-50">
+                            <TableHead className="font-semibold text-gray-700">Nombre</TableHead>
+                            <TableHead className="font-semibold text-gray-700">Stock Actual</TableHead>
+                            <TableHead className="font-semibold text-gray-700">Stock Mínimo</TableHead>
+                            <TableHead className="text-right font-semibold text-gray-700">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {productList.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                                    No hay productos registrados.
+                                <TableCell colSpan={4} className="text-center py-12 text-gray-500 bg-gray-50">
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                                            <span className="text-2xl">📦</span>
+                                        </div>
+                                        <p className="text-lg font-medium text-gray-600">No hay productos registrados</p>
+                                        <p className="text-sm text-gray-400 mt-2">Comienza creando tu primer producto</p>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ) : (
                             productList.map((product: Producto) => (
-                                <TableRow key={product.id}>
-                                    <TableCell className="font-medium">{product.nombre}</TableCell>
-                                    <TableCell>
-                                        <span className={`px-2 py-1 rounded font-semibold ${product.stockActual <= product.stockMinimo
-                                                ? "bg-red-100 text-red-800"
-                                                : "bg-green-100 text-green-800"
-                                            }`}>
-                                            {product.stockActual}
-                                        </span>
+                                <TableRow key={product.id} className="hover:bg-gray-50 transition-colors">
+                                    <TableCell className="font-medium text-gray-800 py-4">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
+                                                <span className="text-blue-600 font-bold text-sm">{product.nombre.charAt(0)}</span>
+                                            </div>
+                                            <div>
+                                                <div className="font-semibold text-gray-900">{product.nombre}</div>
+                                                {product.descripcion && (
+                                                    <div className="text-sm text-gray-500 truncate max-w-xs">{product.descripcion}</div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </TableCell>
-                                    <TableCell>{product.stockMinimo}</TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="py-4">
+                                        <div className="flex items-center space-x-2">
+                                            <span className={`px-3 py-1 rounded-full font-semibold text-sm border ${product.stockActual <= product.stockMinimo
+                                                    ? "bg-red-50 text-red-700 border-red-200"
+                                                    : "bg-green-50 text-green-700 border-green-200"
+                                                }`}>
+                                                {product.stockActual}
+                                            </span>
+                                            {product.stockActual <= product.stockMinimo && (
+                                                <span className="text-red-600 text-xs font-medium">⚠️ Bajo</span>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="py-4 text-gray-600 font-medium">{product.stockMinimo}</TableCell>
+                                    <TableCell className="text-right py-4">
                                         <div className="flex justify-end gap-2">
-                                            <Button variant="outline" size="sm" onClick={() => handleEdit(product)}>
-                                                <Pencil className="w-4 h-4" />
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleEdit(product)}
+                                                className="border-gray-300 hover:bg-gray-50 text-gray-700"
+                                            >
+                                                <Pencil className="w-4 h-4 mr-1" />
+                                                Editar
                                             </Button>
-                                            <Button variant="destructive" size="sm" onClick={() => handleDelete(product.id)}>
-                                                <Trash2 className="w-4 h-4" />
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => handleDelete(product.id)}
+                                                className="bg-red-500 hover:bg-red-600 text-white"
+                                            >
+                                                <Trash2 className="w-4 h-4 mr-1" />
+                                                Eliminar
                                             </Button>
                                         </div>
                                     </TableCell>
