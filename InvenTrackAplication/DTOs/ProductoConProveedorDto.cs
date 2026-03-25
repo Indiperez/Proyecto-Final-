@@ -1,7 +1,6 @@
 namespace InventTrackAI.API.DTOs
 {
-    // Internal DTO used by ProductoRespository.GetByIdConProveedor
-    // and PrediccionService to load product + supplier data for analysis.
+    // Internal DTO: product + supplier data used by PrediccionService
     public class ProductoConProveedorDto
     {
         public int Id { get; set; }

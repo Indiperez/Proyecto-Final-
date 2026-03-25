@@ -38,7 +38,6 @@ export function useRecalculatePrediction() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: predictionKeys.all });
             queryClient.invalidateQueries({ queryKey: productKeys.all });
-            queryClient.invalidateQueries({ queryKey: ["alerts", "list"] });
             toast.success("Predicción recalculada");
         },
         onError: (error: AxiosError<ApiError>) => {

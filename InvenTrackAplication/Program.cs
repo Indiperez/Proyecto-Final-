@@ -20,6 +20,7 @@ builder.Services.AddScoped<ProveedorRepository>();
 builder.Services.AddScoped<AlertaRepository>();
 builder.Services.AddScoped<UsuarioRepository>();
 
+builder.Services.AddScoped<ConsumptionAnalyzer>();
 builder.Services.AddScoped<IMovimientoInventarioRepository, MovimientoInventarioRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IHistoricoConsumoRepository, HistoricoConsumoRepository>();

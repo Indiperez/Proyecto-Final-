@@ -147,7 +147,7 @@ export interface HistoricoConsumo {
 export interface PrediccionDemanda {
     id: number;
     productoId: number;
-    consomoDiarioPromedio: number;
+    consumoDiarioPromedio: number;
     demandaEstimada30Dias: number;
     tendencia: 'Sube' | 'Baja' | 'Estable';
     puntoReorden: number;
@@ -165,6 +165,18 @@ export interface ProductoAnalisis {
     rotacion: 'Alta' | 'Media' | 'Baja';
     puntoReorden: number;
     demandaEstimada30Dias: number;
+    calculadoEn: string;
+}
+
+export interface MovimientoResponse {
+    id: number;
+    productoId: number;
+    nombreProducto: string;
+    usuarioId: number;
+    tipo: TipoMovimiento;
+    cantidad: number;
+    fecha: string;
+    observacion?: string;
 }
 
 // AI Recommendation (for AiRecommendations component)

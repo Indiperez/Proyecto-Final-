@@ -252,7 +252,7 @@ namespace InventTrackAI.API.Repositories
         }
 
 
-        public ProductoAnalisisDto? GetByIdConProveedor(int id)
+        public ProductoConProveedorDto? GetByIdConProveedor(int id)
         {
             using (var connection = _db.GetConnection())
             {
@@ -269,7 +269,7 @@ namespace InventTrackAI.API.Repositories
 
                 if (reader.Read())
                 {
-                    return new ProductoAnalisisDto
+                    return new ProductoConProveedorDto
                     {
                         Id = Convert.ToInt32(reader["Id"]),
                         Nombre = reader["Nombre"].ToString(),

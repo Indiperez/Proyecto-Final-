@@ -8,15 +8,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { loginFromSchema } from "@/schemas/auth";
 import type { LoginFormType } from "@/types/auth";
 import { ErrorMessage } from "../ErrorMessage";
-import { useLogin } from "@/services/auth/useAuth";
-import { useNavigate } from "react-router-dom";
 
 export const LoginForm = () => {
   const initialValues: LoginFormType = {
     email: "",
     password: "",
   };
-
   const {
     handleSubmit,
     register,
@@ -26,17 +23,7 @@ export const LoginForm = () => {
     defaultValues: initialValues,
   });
 
-  const { mutateAsync: login } = useLogin();
-  const navigate = useNavigate();
-
-  const onSubmit = async (data: LoginFormType) => {
-    try {
-      await login(data);
-      navigate("/dashboard");
-    } catch (error) {
-      // Error is handled by useLogin mutation (toast)
-    }
-  };
+  const onSubmit = () => {};
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -47,7 +34,7 @@ export const LoginForm = () => {
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            {...register("email")}
+            {...register}
             id="email"
             type="email"
             placeholder="correo@ejemplo.com"
@@ -65,7 +52,7 @@ export const LoginForm = () => {
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            {...register("password")}
+            {...register}
             id="password"
             type="password"
             placeholder="••••••••"

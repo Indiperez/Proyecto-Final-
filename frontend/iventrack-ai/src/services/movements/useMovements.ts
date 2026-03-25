@@ -26,8 +26,7 @@ export function useCreateMovement() {
             // Validamos nulos para TypeScript
             if (!response) return;
 
-            // IMPORTANTE: Invalidamos los productos para que la tabla 
-            // muestre el stock actualizado después del movimiento
+            // Invalidamos todas las queries afectadas por un movimiento
             queryClient.invalidateQueries({ queryKey: ["products"] });
             queryClient.invalidateQueries({ queryKey: ["movements", "list"] });
             queryClient.invalidateQueries({ queryKey: ["alerts", "list"] });

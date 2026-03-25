@@ -121,7 +121,9 @@ export default function MovementsPage() {
 
     // Real movement data
     const { data: movementsData, isLoading: isLoadingMovements } = useMovements();
-    const allMovements: MovimientoResponse[] = movementsData ?? [];
+    const allMovements: MovimientoResponse[] = Array.isArray(movementsData)
+        ? movementsData
+        : [];
 
     // KPI calculations
     const todayStr = new Date().toISOString().split("T")[0];

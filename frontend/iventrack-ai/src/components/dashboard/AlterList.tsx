@@ -11,31 +11,34 @@ import { Button } from "@/components/ui/button";
 // import { useInventoryStore } from "@/lib/store"
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
-import type { Alert } from "@/types/dashboard";
-import { useAlerts, useMarkAlertAsRead } from "@/services/alerts/useAlerts";
-import { useProducts } from "@/services/products/useProducts";
-import type { Alerta, Producto } from "@/types/api";
+import type { Alert, Product } from "@/types/dashboard";
 
 export function AlertsList() {
-  const { data: alertsData } = useAlerts();
-  const { data: productsData } = useProducts();
-  const markAsReadMutation = useMarkAlertAsRead();
+  //   const { alerts, products } = useInventoryStore()
+  const alerts: Alert[] = [
+    {
+      date: "",
+      id: "",
+      priority: "high",
+      productId: "",
+      recommendation: "",
+      status: "attended",
+      type: "critical_stock",
+    },
+  ];
 
-  // Normalize data
-  const productList: Producto[] = Array.isArray(productsData) ? productsData : (productsData && typeof productsData === 'object' && 'data' in productsData ? (productsData as { data: Producto[] }).data : []);
-
-  const alertsList: Alerta[] = Array.isArray(alertsData) ? alertsData : (alertsData && typeof alertsData === 'object' && 'data' in alertsData ? (alertsData as { data: Alerta[] }).data : []);
-
-  // Map API alerts to UI alerts
-  const alerts: Alert[] = alertsList.map(a => ({
-    id: a.id.toString(),
-    productId: a.productoId.toString(),
-    type: 'reorder', // Default type as API doesn't provide it yet
-    priority: 'medium', // Default priority
-    date: new Date(a.fecha).toLocaleDateString(),
-    status: a.leida ? 'attended' : 'pending',
-    recommendation: a.mensaje
-  }));
+  const products: Product[] = [
+    {
+      category: "",
+      code: "",
+      currentStock: 3,
+      id: "",
+      leadTime: 2,
+      name: "",
+      status: "active",
+      stockMin: 1,
+    },
+  ];
 
   const pendingAlerts = alerts
     .filter((a) => a.status === "pending")
@@ -43,12 +46,8 @@ export function AlertsList() {
 
   const getProductName = (productId: string) => {
     return (
-      productList.find((p) => p.id.toString() === productId)?.nombre || "Producto desconocido"
+      products.find((p) => p.id === productId)?.name || "Producto desconocido"
     );
-  };
-
-  const handleMarkAsRead = (id: string) => {
-    markAsReadMutation.mutate(parseInt(id));
   };
 
   const getPriorityConfig = (priority: string) => {
@@ -168,19 +167,7 @@ export function AlertsList() {
                         {alert.recommendation}
                       </p>
                     </div>
-
-                    {alert.status === "pending" && (
-                      <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleMarkAsRead(alert.id)}
-                          className="flex-shrink-0 hover:bg-success/10 hover:text-success hover:border-success/30 ml-2"
-                        >
-                          Marcar leída
-                        </Button>
-                      </div>
-                    )}
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
                   </div>
                 </div>
               );

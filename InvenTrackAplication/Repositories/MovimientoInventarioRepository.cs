@@ -1,4 +1,5 @@
 using InventTrackAI.API.Data;
+using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Models;
 using InventTrackAI.API.Repositories.Interfaces;
 using MySql.Data.MySqlClient;
@@ -179,6 +180,41 @@ namespace InventTrackAI.API.Repositories
                 transaction.Rollback();
                 throw;
             }
+        }
+
+        public List<MovimientoResponseDto> ObtenerTodos()
+        {
+            var movimientos = new List<MovimientoResponseDto>();
+            using var conn = _db.GetConnection();
+            var query = @"SELECT m.Id, m.ProductoId, p.Nombre AS NombreProducto,
+                                 m.UsuarioId, m.Tipo, m.Cantidad, m.Fecha, m.Observacion
+                          FROM MovimientosInventario m
+                          INNER JOIN Productos p ON m.ProductoId = p.Id
+                          ORDER BY m.Fecha DESC
+                          LIMIT 100";
+
+            var cmd = new MySqlCommand(query, conn);
+            conn.Open();
+            var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                movimientos.Add(new MovimientoResponseDto
+                {
+                    Id             = Convert.ToInt32(reader["Id"]),
+                    ProductoId     = Convert.ToInt32(reader["ProductoId"]),
+                    NombreProducto = reader["NombreProducto"].ToString(),
+                    UsuarioId      = Convert.ToInt32(reader["UsuarioId"]),
+                    Tipo           = reader["Tipo"].ToString(),
+                    Cantidad       = Convert.ToInt32(reader["Cantidad"]),
+                    Fecha          = Convert.ToDateTime(reader["Fecha"]),
+                    Observacion    = reader["Observacion"] == DBNull.Value
+                                         ? null
+                                         : reader["Observacion"].ToString()
+                });
+            }
+
+            return movimientos;
         }
     }
 }

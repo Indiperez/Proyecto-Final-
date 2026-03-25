@@ -34,28 +34,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-// import { useInventoryStore } from "@/lib/store"
 import { cn } from "@/lib/utils";
-import type { Product } from "@/types/dashboard";
 import { useProducts } from "@/services/products/useProducts";
 import type { Producto } from "@/types/api";
 
 type StockStatus = "all" | "normal" | "low" | "critical";
 
 export default function InventoryPage() {
-  const { data: productsData } = useProducts();
+  const { data: productsData, isLoading } = useProducts();
 
-  const productList: Producto[] = Array.isArray(productsData) ? productsData : (productsData && typeof productsData === 'object' && 'data' in productsData ? (productsData as { data: Producto[] }).data : []);
-
-  const products: Product[] = productList.map(p => ({
+  const mappedProducts = (Array.isArray(productsData)
+    ? productsData
+    : (productsData && "data" in (productsData as object)
+        ? (productsData as { data: Producto[] }).data
+        : [])
+  ).map((p: Producto) => ({
     id: p.id.toString(),
-    code: `PROD-${p.id}`,
     name: p.nombre,
-    category: "General",
+    code: `PRD-${String(p.id).padStart(3, "0")}`,
     currentStock: p.stockActual,
     stockMin: p.stockMinimo,
+    category: p.descripcion || "—",
     leadTime: 0,
-    status: "active"
+    status: p.stockActual > 0 ? ("active" as const) : ("inactive" as const),
   }));
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -99,9 +100,11 @@ export default function InventoryPage() {
     }
   };
 
-  const activeProducts = products.filter((p) => p.status === "active");
+  type MappedProduct = (typeof mappedProducts)[number];
 
-  const filteredProducts = activeProducts.filter((product) => {
+  const activeProducts = mappedProducts.filter((p: MappedProduct) => p.status === "active");
+
+  const filteredProducts = activeProducts.filter((product: MappedProduct) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.code.toLowerCase().includes(searchTerm.toLowerCase());
@@ -113,14 +116,20 @@ export default function InventoryPage() {
 
   // Calculate summary stats
   const normalCount = activeProducts.filter(
-    (p) => getStockStatus(p.currentStock, p.stockMin) === "normal",
+    (p: MappedProduct) => getStockStatus(p.currentStock, p.stockMin) === "normal",
   ).length;
   const lowCount = activeProducts.filter(
-    (p) => getStockStatus(p.currentStock, p.stockMin) === "low",
+    (p: MappedProduct) => getStockStatus(p.currentStock, p.stockMin) === "low",
   ).length;
   const criticalCount = activeProducts.filter(
-    (p) => getStockStatus(p.currentStock, p.stockMin) === "critical",
+    (p: MappedProduct) => getStockStatus(p.currentStock, p.stockMin) === "critical",
   ).length;
+
+  if (isLoading) return (
+    <div className="p-8 text-center text-muted-foreground">
+      Cargando inventario...
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -269,7 +278,7 @@ export default function InventoryPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredProducts.map((product, index) => {
+              filteredProducts.map((product: MappedProduct, index: number) => {
                 const status = getStockStatus(
                   product.currentStock,
                   product.stockMin,

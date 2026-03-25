@@ -24,6 +24,20 @@ namespace InventTrackAI.API.Controllers
             _prediccionService = prediccionService;
         }
 
+        [HttpGet]
+        public IActionResult ObtenerTodos()
+        {
+            try
+            {
+                var movimientos = _repository.ObtenerTodos();
+                return Ok(movimientos);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
         [HttpPost]
         public IActionResult Registrar(RegistrarMovimientoDto dto)
         {

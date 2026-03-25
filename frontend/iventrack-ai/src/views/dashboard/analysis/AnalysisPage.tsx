@@ -56,19 +56,7 @@ import {
 } from "@/services/predictions/usePredictions";
 import type { ProductoAnalisis } from "@/types/api";
 
-// Mock historical consumption data — no real endpoint yet
-const consumptionHistory = [
-  { period: "Ene", value: 120 },
-  { period: "Feb", value: 145 },
-  { period: "Mar", value: 132 },
-  { period: "Abr", value: 168 },
-  { period: "May", value: 155 },
-  { period: "Jun", value: 189 },
-  { period: "Jul", value: 176 },
-  { period: "Ago", value: 198 },
-];
-
-type PeriodFilter = "30" | "60" | "90";
+type PeriodFilter = "30" | "60";
 
 const getTrendConfig = (trend: ProductoAnalisis["tendencia"]) => {
   switch (trend) {
@@ -131,10 +119,32 @@ export default function AnalysisPage() {
   const productList = Array.isArray(products) ? products : [];
   const analysisList: ProductoAnalisis[] = analysisData ?? [];
 
+  // Bar chart: top 8 by selected period
+  const barData = analysisList
+    .sort((a, b) =>
+      periodFilter === "60"
+        ? (b.promedio60d ?? 0) - (a.promedio60d ?? 0)
+        : (b.promedio30d ?? 0) - (a.promedio30d ?? 0),
+    )
+    .slice(0, 8)
+    .map((p) => ({
+      period: p.nombre.length > 10 ? p.nombre.substring(0, 10) + "..." : p.nombre,
+      value: periodFilter === "60" ? (p.promedio60d ?? 0) : (p.promedio30d ?? 0),
+    }));
+
   // Derived insights from real data
   const atRiskCount = analysisList.filter(
     (a) => a.stockActual <= a.puntoReorden,
   ).length;
+  const highRotationCount = analysisList.filter((p) => p.rotacion === "Alta").length;
+  const efficiencyPct =
+    analysisList.length > 0
+      ? Math.round((highRotationCount / analysisList.length) * 100)
+      : 0;
+  const totalDemand30d = analysisList.reduce(
+    (sum, p) => sum + (p.demandaEstimada30Dias ?? 0),
+    0,
+  );
 
   return (
     <div className="space-y-6">
@@ -165,7 +175,6 @@ export default function AnalysisPage() {
           <SelectContent>
             <SelectItem value="30">Últimos 30 días</SelectItem>
             <SelectItem value="60">Últimos 60 días</SelectItem>
-            <SelectItem value="90">Últimos 90 días</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -180,11 +189,22 @@ export default function AnalysisPage() {
           <CardHeader>
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-primary" />
-              Consumo Histórico
+              Consumo por Producto
             </CardTitle>
-            <CardDescription>Unidades consumidas por período</CardDescription>
+            <CardDescription>
+              Promedio de salidas — top 8 productos ({periodFilter}d)
+            </CardDescription>
           </CardHeader>
           <CardContent>
+            {isAnalysisLoading ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">
+                Cargando...
+              </p>
+            ) : barData.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">
+                No hay datos de consumo disponibles.
+              </p>
+            ) : (
             <ChartContainer
               config={{
                 value: {
@@ -196,7 +216,7 @@ export default function AnalysisPage() {
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={consumptionHistory}
+                  data={barData}
                   margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                 >
                   <CartesianGrid
@@ -226,6 +246,7 @@ export default function AnalysisPage() {
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -303,7 +324,7 @@ export default function AnalysisPage() {
                     Consumo diario prom.
                   </p>
                   <p className="text-xl font-bold font-mono">
-                    {prediction.consomoDiarioPromedio.toFixed(1)}
+                    {prediction.consumoDiarioPromedio.toFixed(1)}
                   </p>
                   <p className="text-xs text-muted-foreground">unidades/día</p>
                 </div>
@@ -405,9 +426,6 @@ export default function AnalysisPage() {
                     Prom. 60d
                   </TableHead>
                   <TableHead className="text-muted-foreground text-center">
-                    Prom. 90d
-                  </TableHead>
-                  <TableHead className="text-muted-foreground text-center">
                     Tendencia
                   </TableHead>
                   <TableHead className="text-muted-foreground text-center">
@@ -459,9 +477,6 @@ export default function AnalysisPage() {
                           {product.promedio60d.toFixed(1)}
                         </span>
                       </TableCell>
-                      <TableCell className="text-center font-mono text-muted-foreground">
-                        —
-                      </TableCell>
                       <TableCell className="text-center">
                         <div
                           className={cn(
@@ -508,11 +523,13 @@ export default function AnalysisPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 rounded-xl bg-background/50 border border-border/50">
               <p className="text-sm text-muted-foreground mb-1">
-                Demanda Proyectada
+                Demanda Total 30d
               </p>
-              <p className="text-2xl font-bold text-foreground">+18%</p>
+              <p className="text-2xl font-bold text-foreground">
+                {isAnalysisLoading ? "—" : totalDemand30d.toFixed(0)}
+              </p>
               <p className="text-xs text-success mt-1">
-                para el próximo trimestre
+                unidades proyectadas
               </p>
             </div>
             <div className="p-4 rounded-xl bg-background/50 border border-border/50">
@@ -528,11 +545,13 @@ export default function AnalysisPage() {
             </div>
             <div className="p-4 rounded-xl bg-background/50 border border-border/50">
               <p className="text-sm text-muted-foreground mb-1">
-                Eficiencia de Stock
+                Alta Rotación
               </p>
-              <p className="text-2xl font-bold text-foreground">87%</p>
+              <p className="text-2xl font-bold text-foreground">
+                {isAnalysisLoading ? "—" : `${efficiencyPct}%`}
+              </p>
               <p className="text-xs text-primary mt-1">
-                sobre el objetivo mensual
+                de los productos activos
               </p>
             </div>
           </div>

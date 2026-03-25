@@ -8,7 +8,6 @@ import {
   Package,
   Check,
   Sparkles,
-  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,22 +21,21 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { Alert } from "@/types/dashboard";
+import type { Alerta } from "@/types/api";
 import { useAlerts, useMarkAlertAsRead } from "@/services/alerts/useAlerts";
 
 type StatusFilter = "all" | "pending" | "attended";
 type PriorityFilter = "all" | "high" | "medium" | "low";
 
 export default function AlertsPage() {
+  const { data: alertsData, isLoading, isError } = useAlerts();
+  const markAsRead = useMarkAlertAsRead();
+
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
 
-  const { data: alertsData, isLoading, isError, refetch } = useAlerts();
-  const markAsRead = useMarkAlertAsRead();
-
-  // Transform Alerta → Alert UI type
-  const alerts: Alert[] = (alertsData ?? []).map((alerta) => {
+  const alerts: Alert[] = (alertsData ?? []).map((alerta: Alerta) => {
     const msg = alerta.mensaje.toLowerCase();
-
     let type: Alert["type"] = "reorder";
     let priority: Alert["priority"] = "medium";
 
@@ -137,6 +135,33 @@ export default function AlertsPage() {
   ).length;
   const attendedCount = alerts.filter((a) => a.status === "attended").length;
 
+  if (isLoading)
+    return (
+      <div className="space-y-6">
+        <div className="animate-fade-in">
+          <h1 className="text-2xl font-bold text-foreground">Alertas</h1>
+          <p className="text-muted-foreground mt-1">
+            Gestiona las alertas generadas automáticamente
+          </p>
+        </div>
+        <div className="text-center py-16 text-muted-foreground">
+          Cargando alertas...
+        </div>
+      </div>
+    );
+
+  if (isError)
+    return (
+      <div className="space-y-6">
+        <div className="animate-fade-in">
+          <h1 className="text-2xl font-bold text-foreground">Alertas</h1>
+        </div>
+        <div className="text-center py-16 text-muted-foreground">
+          Error al cargar alertas. Intenta de nuevo.
+        </div>
+      </div>
+    );
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -166,7 +191,7 @@ export default function AlertsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {isLoading ? "—" : pendingCount}
+                  {pendingCount}
                 </p>
                 <p className="text-sm text-muted-foreground">Pendientes</p>
               </div>
@@ -190,7 +215,7 @@ export default function AlertsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {isLoading ? "—" : highPriorityCount}
+                  {highPriorityCount}
                 </p>
                 <p className="text-sm text-muted-foreground">Alta Prioridad</p>
               </div>
@@ -214,7 +239,7 @@ export default function AlertsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {isLoading ? "—" : attendedCount}
+                  {attendedCount}
                 </p>
                 <p className="text-sm text-muted-foreground">Atendidas</p>
               </div>
@@ -261,51 +286,12 @@ export default function AlertsPage() {
 
       {/* Alerts List */}
       <div className="space-y-3">
-        {/* Loading state */}
-        {isLoading &&
-          Array.from({ length: 3 }).map((_, i) => (
-            <Card
-              key={i}
-              className="border-border/50 bg-card/80 backdrop-blur-sm animate-pulse"
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-secondary/50 shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-secondary/50 rounded w-1/3" />
-                    <div className="h-4 bg-secondary/50 rounded w-1/2" />
-                    <div className="h-10 bg-secondary/50 rounded" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-
-        {/* Error state */}
-        {isError && (
-          <div className="text-center py-16 animate-fade-in">
-            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-critical opacity-70" />
-            <p className="text-muted-foreground mb-4">
-              Error al cargar las alertas
-            </p>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-              Reintentar
-            </Button>
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!isLoading && !isError && filteredAlerts.length === 0 && (
+        {filteredAlerts.length === 0 ? (
           <div className="text-center py-16 animate-fade-in">
             <Info className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
             <p className="text-muted-foreground">No se encontraron alertas</p>
           </div>
-        )}
-
-        {/* Alert cards */}
-        {!isLoading &&
-          !isError &&
+        ) : (
           filteredAlerts.map((alert, index) => {
             const config = getPriorityConfig(alert.priority);
             const Icon = config.icon;
@@ -326,7 +312,7 @@ export default function AlertsPage() {
                   <div className="flex items-start gap-4">
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                        "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
                         config.bg,
                       )}
                     >
@@ -355,13 +341,13 @@ export default function AlertsPage() {
                       <div className="flex items-center gap-2 mb-2">
                         <Package className="w-4 h-4 text-muted-foreground" />
                         <span className="font-medium">
-                          Producto #{alert.productId}
+                          {`Producto #${alert.productId}`}
                         </span>
                       </div>
 
                       <div className="p-3 rounded-lg bg-secondary/30 border border-border/30">
                         <div className="flex items-start gap-2">
-                          <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                          <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                           <p className="text-sm text-muted-foreground">
                             {alert.recommendation}
                           </p>
@@ -375,7 +361,7 @@ export default function AlertsPage() {
                         size="sm"
                         onClick={() => markAsRead.mutate(Number(alert.id))}
                         disabled={markAsRead.isPending}
-                        className="flex-shrink-0 hover:bg-success/10 hover:text-success hover:border-success/30"
+                        className="shrink-0 hover:bg-success/10 hover:text-success hover:border-success/30"
                       >
                         <Check className="w-4 h-4 mr-2" />
                         Marcar como atendida
@@ -385,17 +371,16 @@ export default function AlertsPage() {
                 </CardContent>
               </Card>
             );
-          })}
+          })
+        )}
       </div>
 
       {/* Summary */}
-      {!isLoading && !isError && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground animate-fade-in">
-          <p>
-            Mostrando {filteredAlerts.length} de {alerts.length} alertas
-          </p>
-        </div>
-      )}
+      <div className="flex items-center justify-between text-sm text-muted-foreground animate-fade-in">
+        <p>
+          Mostrando {filteredAlerts.length} de {alerts.length} alertas
+        </p>
+      </div>
     </div>
   );
 }

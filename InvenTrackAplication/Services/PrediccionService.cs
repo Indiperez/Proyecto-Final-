@@ -1,4 +1,3 @@
-using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Models;
 using InventTrackAI.API.Repositories;
 using InventTrackAI.API.Repositories.Interfaces;
@@ -17,14 +16,13 @@ namespace InventTrackAI.API.Services
             IHistoricoConsumoRepository historicoRepo,
             IPrediccionRepository prediccionRepo,
             ProductoRespository productoRepo,
-            AlertaRepository alertaRepo,
-            ConsumptionAnalyzer analyzer)
+            AlertaRepository alertaRepo)
         {
             _historicoRepo = historicoRepo;
             _prediccionRepo = prediccionRepo;
             _productoRepo = productoRepo;
             _alertaRepo = alertaRepo;
-            _analyzer = analyzer;
+            _analyzer = new ConsumptionAnalyzer();
         }
 
         public async Task EjecutarAnalisisAsync(int productoId)

@@ -3,13 +3,13 @@ import { MOVIMIENTOS } from "./endpoints/endpoints";
 import { request } from "./wrapper";
 import type { CreateMovimientoRequest, MovimientoResponse } from "@/types/api";
 
-// CRITICO lideres!!!!!: esta es la unica forma de registrar movimientos, el backend actualiza el stock automaticamente en la transaccion. No se debe crear un endpoint para actualizar stock manualmente, 
-// eso rompe la logica de negocio y puede generar inconsistencias.
-
-
 export async function getMovements() {
     return request<MovimientoResponse[]>(() => api.get(MOVIMIENTOS.LIST));
 }
+
+// CRITICO lideres!!!!!: esta es la unica forma de registrar movimientos, el backend actualiza el stock automaticamente en la transaccion. No se debe crear un endpoint para actualizar stock manualmente, 
+// eso rompe la logica de negocio y puede generar inconsistencias.
+
 
 // Register new movement (Entrada/Salida/Ajuste)
 export async function createMovement(data: CreateMovimientoRequest) {

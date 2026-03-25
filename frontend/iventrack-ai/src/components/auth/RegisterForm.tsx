@@ -17,14 +17,13 @@ import type { RegisterFormType } from "@/types/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerFormSchema } from "@/schemas/auth";
 import { ErrorMessage } from "../ErrorMessage";
-import { useCreateAccount } from "@/services/auth/mutations";
 
 export const RegisterForm = () => {
   const initialValues: RegisterFormType = {
     email: "",
     nombre: "",
     password: "",
-    rol: "Operador",
+    rol: "OPERATOR",
   };
 
   const {
@@ -39,36 +38,15 @@ export const RegisterForm = () => {
   });
 
   const role = watch("rol");
-  const { mutateAsync: createAccount } = useCreateAccount();
 
   const onSubmit = async (formData: RegisterFormType) => {
-    console.log('Form submitted with data:', formData);
-    console.log('Validation errors:', errors);
+    console.log(formData);
 
-    if (Object.keys(errors).length > 0) {
-      console.log('Form has validation errors, not submitting');
-      return;
-    }
+    // const success = await register(name, email, password, role);
 
-    try {
-      console.log('Calling createAccount with:', {
-        nombre: formData.nombre,
-        email: formData.email,
-        password: formData.password,
-        rol: formData.rol,
-      });
-
-      await createAccount({
-        nombre: formData.nombre,
-        email: formData.email,
-        password: formData.password,
-        rol: formData.rol,
-      });
-
-      console.log('Registration successful');
-    } catch (error) {
-      console.error('Registration failed:', error);
-    }
+    // if (success) {
+    //   router.push("/dashboard");
+    // }
   };
 
   return (
@@ -132,23 +110,25 @@ export const RegisterForm = () => {
           <button
             type="button"
             onClick={() =>
-              setValue("rol", "Operador", { shouldValidate: true })
+              setValue("rol", "OPERATOR", { shouldValidate: true })
             }
-            className={`p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-2 ${role === "Operador"
+            className={`p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-2 ${
+              role === "OPERATOR"
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-border/50 bg-secondary/30 text-muted-foreground hover:border-border"
-              }`}
+            }`}
           >
             <UserCog className="w-6 h-6" />
             <span className="text-sm font-medium">Operador</span>
           </button>
           <button
             type="button"
-            onClick={() => setValue("rol", "Admin", { shouldValidate: true })}
-            className={`p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-2 ${role === "Admin"
+            onClick={() => setValue("rol", "ADMIN", { shouldValidate: true })}
+            className={`p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-2 ${
+              role === "ADMIN"
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-border/50 bg-secondary/30 text-muted-foreground hover:border-border"
-              }`}
+            }`}
           >
             <Shield className="w-6 h-6" />
             <span className="text-sm font-medium">Administrador</span>

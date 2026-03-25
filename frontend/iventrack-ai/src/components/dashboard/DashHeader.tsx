@@ -22,7 +22,7 @@ export const DashHeader = () => {
 
   const handleLogout = () => {
     // logout();
-    navigate("/auth/login");
+    navigate("/login");
   };
 
   return (

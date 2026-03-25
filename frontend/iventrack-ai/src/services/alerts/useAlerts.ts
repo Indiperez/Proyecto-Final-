@@ -21,10 +21,10 @@ export function useMarkAlertAsRead() {
         mutationFn: (id: number) => AlertsApi.markAlertAsRead(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: alertKeys.all });
-            toast.success("Alerta marcada como leída");
+            toast.success("Alerta marcada como atendida");
         },
         onError: () => {
-            toast.error("Error al marcar alerta");
+            toast.error("Error al marcar la alerta");
         },
     });
 }

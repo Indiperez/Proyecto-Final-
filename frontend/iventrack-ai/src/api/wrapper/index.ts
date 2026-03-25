@@ -6,6 +6,8 @@ export async function request<T>(
   try {
     const { data } = await callback();
 
+    console.log(data);
+
     return data;
   } catch (error) {
     handleError(error);

@@ -36,7 +36,7 @@ export const PROVEEDOR = {
 
 export const MOVIMIENTOS = {
   CREATE: `${BASE_URL}/movimientos`,
-
+  LIST: `${BASE_URL}/movimientos`,
 } as const;
 
 export const ALERTAS = {

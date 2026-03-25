@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import {
   FileText,
@@ -46,6 +44,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { useProducts } from "@/services/products/useProducts";
 import {
   useLowStockProducts,
@@ -404,7 +403,99 @@ export default function ReportsPage() {
   } = useReorderPointProducts();
 
   const exportToCSV = (reportId: ReportType) => {
-    alert(`Exportando reporte: ${reportId}`);
+    let rows: string[][] = [];
+    let filename = "";
+
+    switch (reportId) {
+      case "high_rotation":
+        if (!highRotationData?.length) {
+          toast.error("No hay datos para exportar");
+          return;
+        }
+        filename = "reporte-alta-rotacion.csv";
+        rows = [
+          ["Producto", "Stock Actual", "Stock Mínimo", "Fecha Creación"],
+          ...highRotationData.map((p) => [
+            p.nombre,
+            p.stockActual.toString(),
+            p.stockMinimo.toString(),
+            new Date(p.fechaDeCreacion).toLocaleDateString("es-MX"),
+          ]),
+        ];
+        break;
+
+      case "low_rotation":
+        if (!lowRotationData?.length) {
+          toast.error("No hay datos para exportar");
+          return;
+        }
+        filename = "reporte-baja-rotacion.csv";
+        rows = [
+          ["Producto", "Stock Actual", "Stock Mínimo", "Fecha Creación"],
+          ...lowRotationData.map((p) => [
+            p.nombre,
+            p.stockActual.toString(),
+            p.stockMinimo.toString(),
+            new Date(p.fechaDeCreacion).toLocaleDateString("es-MX"),
+          ]),
+        ];
+        break;
+
+      case "stock_bajo":
+        if (!lowStockData?.length) {
+          toast.error("No hay datos para exportar");
+          return;
+        }
+        filename = "reporte-stock-bajo.csv";
+        rows = [
+          ["Producto", "Stock Actual", "Stock Mínimo", "Diferencia"],
+          ...lowStockData.map((p) => [
+            p.nombre,
+            p.stockActual.toString(),
+            p.stockMinimo.toString(),
+            (p.stockActual - p.stockMinimo).toString(),
+          ]),
+        ];
+        break;
+
+      case "reorder_point":
+        if (!reorderData?.length) {
+          toast.error("No hay datos para exportar");
+          return;
+        }
+        filename = "reporte-punto-reorden.csv";
+        rows = [
+          [
+            "Producto",
+            "Stock Actual",
+            "Stock Mínimo",
+            "Punto Reorden",
+            "Lead Time",
+            "Reordenar",
+          ],
+          ...reorderData.map((p) => [
+            p.producto,
+            p.stockActual.toString(),
+            p.stockMinimo.toString(),
+            p.puntoReorden.toString(),
+            `${p.tiempoEntregaDias}d`,
+            p.reordenar ? "Sí" : "No",
+          ]),
+        ];
+        break;
+    }
+
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Reporte exportado: ${filename}`);
   };
 
   const renderReportContent = (reportId: ReportType) => {
