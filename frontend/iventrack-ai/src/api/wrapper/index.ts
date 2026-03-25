@@ -5,6 +5,9 @@ export async function request<T>(
 ): Promise<T | null> {
   try {
     const { data } = await callback();
+
+    console.log(data);
+
     return data;
   } catch (error) {
     handleError(error);

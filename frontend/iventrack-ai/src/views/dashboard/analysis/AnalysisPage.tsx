@@ -1,5 +1,3 @@
-
-
 import { useState } from "react";
 import {
   TrendingUp,
@@ -10,6 +8,7 @@ import {
   Package,
   Target,
   Calendar,
+  RefreshCw,
 } from "lucide-react";
 import {
   Bar,
@@ -18,8 +17,6 @@ import {
   YAxis,
   CartesianGrid,
   ResponsiveContainer,
-  Area,
-  AreaChart,
 } from "recharts";
 import {
   Card,
@@ -29,6 +26,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -49,11 +47,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
 import { cn } from "@/lib/utils";
-import type { Product } from "@/types/dashboard";
+import { useProducts } from "@/services/products/useProducts";
+import {
+  useAllAnalysis,
+  usePrediction,
+  useRecalculatePrediction,
+} from "@/services/predictions/usePredictions";
+import type { ProductoAnalisis } from "@/types/api";
 
-// Mock historical consumption data
+// Mock historical consumption data — no real endpoint yet
 const consumptionHistory = [
   { period: "Ene", value: 120 },
   { period: "Feb", value: 145 },
@@ -65,155 +68,73 @@ const consumptionHistory = [
   { period: "Ago", value: 198 },
 ];
 
-// Mock prediction data
-const predictionData = [
-  { period: "Sep", actual: null, predicted: 205 },
-  { period: "Oct", actual: null, predicted: 218 },
-  { period: "Nov", actual: null, predicted: 235 },
-  { period: "Dic", actual: null, predicted: 248 },
-];
-
-// Mock product analysis
-const productAnalysis = [
-  {
-    id: "1",
-    name: "Laptop Dell XPS 15",
-    avg30: 8.5,
-    avg60: 7.2,
-    avg90: 6.8,
-    trend: "up",
-    rotation: "high",
-    reorderPoint: 12,
-  },
-  {
-    id: "2",
-    name: 'Monitor Samsung 27"',
-    avg30: 4.2,
-    avg60: 5.1,
-    avg90: 4.8,
-    trend: "down",
-    rotation: "medium",
-    reorderPoint: 8,
-  },
-  {
-    id: "3",
-    name: "Teclado Mecánico RGB",
-    avg30: 12.3,
-    avg60: 11.8,
-    avg90: 10.5,
-    trend: "up",
-    rotation: "high",
-    reorderPoint: 25,
-  },
-  {
-    id: "4",
-    name: "Mouse Inalámbrico",
-    avg30: 15.8,
-    avg60: 14.2,
-    avg90: 13.5,
-    trend: "up",
-    rotation: "high",
-    reorderPoint: 30,
-  },
-  {
-    id: "5",
-    name: "Auriculares Bluetooth",
-    avg30: 6.5,
-    avg60: 7.2,
-    avg90: 6.9,
-    trend: "stable",
-    rotation: "medium",
-    reorderPoint: 15,
-  },
-  {
-    id: "6",
-    name: "Webcam HD 1080p",
-    avg30: 3.2,
-    avg60: 4.5,
-    avg90: 3.8,
-    trend: "down",
-    rotation: "low",
-    reorderPoint: 10,
-  },
-];
-
 type PeriodFilter = "30" | "60" | "90";
 
+const getTrendConfig = (trend: ProductoAnalisis["tendencia"]) => {
+  switch (trend) {
+    case "Sube":
+      return {
+        icon: TrendingUp,
+        color: "text-success",
+        bg: "bg-success/10",
+        label: "Ascendente",
+      };
+    case "Baja":
+      return {
+        icon: TrendingDown,
+        color: "text-critical",
+        bg: "bg-critical/10",
+        label: "Descendente",
+      };
+    default:
+      return {
+        icon: Minus,
+        color: "text-primary",
+        bg: "bg-primary/10",
+        label: "Estable",
+      };
+  }
+};
+
+const getRotationConfig = (rotation: ProductoAnalisis["rotacion"]) => {
+  switch (rotation) {
+    case "Alta":
+      return { color: "bg-success/10 text-success border-success/20", label: "Alta" };
+    case "Media":
+      return { color: "bg-warning/10 text-warning border-warning/20", label: "Media" };
+    default:
+      return { color: "bg-critical/10 text-critical border-critical/20", label: "Baja" };
+  }
+};
+
 export default function AnalysisPage() {
-  const products: Product[] = [
-    {
-      category: "",
-      code: "",
-      currentStock: 3,
-      id: "",
-      leadTime: 2,
-      name: "",
-      status: "active",
-      stockMin: 1,
-    },
-  ];
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("30");
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
 
-  const getTrendConfig = (trend: string) => {
-    switch (trend) {
-      case "up":
-        return {
-          icon: TrendingUp,
-          color: "text-success",
-          bg: "bg-success/10",
-          label: "Ascendente",
-        };
-      case "down":
-        return {
-          icon: TrendingDown,
-          color: "text-critical",
-          bg: "bg-critical/10",
-          label: "Descendente",
-        };
-      default:
-        return {
-          icon: Minus,
-          color: "text-primary",
-          bg: "bg-primary/10",
-          label: "Estable",
-        };
-    }
-  };
+  const { data: products } = useProducts();
 
-  const getRotationConfig = (rotation: string) => {
-    switch (rotation) {
-      case "high":
-        return {
-          color: "bg-success/10 text-success border-success/20",
-          label: "Alta",
-        };
-      case "medium":
-        return {
-          color: "bg-warning/10 text-warning border-warning/20",
-          label: "Media",
-        };
-      default:
-        return {
-          color: "bg-critical/10 text-critical border-critical/20",
-          label: "Baja",
-        };
-    }
-  };
+  const {
+    data: analysisData,
+    isLoading: isAnalysisLoading,
+    isError: isAnalysisError,
+    refetch: refetchAnalysis,
+  } = useAllAnalysis();
 
-  // Combine historical and predicted data for chart
-  const combinedChartData = [
-    ...consumptionHistory.map((d) => ({
-      ...d,
-      type: "actual",
-      predicted: null,
-    })),
-    ...predictionData.map((d) => ({
-      period: d.period,
-      value: d.predicted,
-      type: "predicted",
-      predicted: d.predicted,
-    })),
-  ];
+  const {
+    data: prediction,
+    isLoading: isPredictionLoading,
+  } = usePrediction(selectedProductId ?? 0);
+
+  const { mutate: recalculate, isPending: isRecalculating } =
+    useRecalculatePrediction();
+
+  const productList = Array.isArray(products) ? products : [];
+  const analysisList: ProductoAnalisis[] = analysisData ?? [];
+
+  // Derived insights from real data
+  const atRiskCount = analysisList.filter(
+    (a) => a.stockActual <= a.puntoReorden,
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -308,115 +229,131 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
 
-        {/* Prediction Chart */}
+        {/* Demand Prediction Card */}
         <Card
           className="border-border/50 bg-card/80 backdrop-blur-sm animate-fade-in opacity-0"
           style={{ animationDelay: "200ms", animationFillMode: "forwards" }}
         >
           <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              Predicción de Demanda
-            </CardTitle>
-            <CardDescription>
-              Proyección basada en análisis histórico
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={{
-                value: {
-                  label: "Actual",
-                  color: "oklch(0.75 0.15 195)",
-                },
-                predicted: {
-                  label: "Predicción",
-                  color: "oklch(0.7 0.18 160)",
-                },
-              }}
-              className="h-62.5"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={combinedChartData}
-                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  Predicción de Demanda
+                </CardTitle>
+                <CardDescription>
+                  Proyección basada en análisis histórico
+                </CardDescription>
+              </div>
+              {selectedProductId !== null && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  disabled={isRecalculating}
+                  onClick={() => recalculate(selectedProductId)}
                 >
-                  <defs>
-                    <linearGradient
-                      id="colorActual"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="oklch(0.75 0.15 195)"
-                        stopOpacity={0.3}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="oklch(0.75 0.15 195)"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                    <linearGradient
-                      id="colorPredicted"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="oklch(0.7 0.18 160)"
-                        stopOpacity={0.3}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="oklch(0.7 0.18 160)"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="oklch(0.28 0.01 260)"
+                  <RefreshCw
+                    className={cn(
+                      "w-3.5 h-3.5 mr-1.5",
+                      isRecalculating && "animate-spin",
+                    )}
                   />
-                  <XAxis
-                    dataKey="period"
-                    stroke="oklch(0.65 0.02 260)"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="oklch(0.65 0.02 260)"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Area
-                    type="monotone"
-                    dataKey="value"
-                    stroke="oklch(0.75 0.15 195)"
-                    strokeWidth={2}
-                    fill="url(#colorActual)"
-                    name="Actual"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="predicted"
-                    stroke="oklch(0.7 0.18 160)"
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    fill="url(#colorPredicted)"
-                    name="Predicción"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+                  Recalcular
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Product selector */}
+            <Select
+              value={selectedProductId?.toString() ?? ""}
+              onValueChange={(v) => setSelectedProductId(Number(v))}
+            >
+              <SelectTrigger className="w-full bg-secondary/50 border-border/50">
+                <Package className="w-4 h-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Selecciona un producto..." />
+              </SelectTrigger>
+              <SelectContent>
+                {productList.map((p) => (
+                  <SelectItem key={p.id} value={p.id.toString()}>
+                    {p.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Prediction metrics */}
+            {selectedProductId === null ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Selecciona un producto para ver su predicción de demanda.
+              </p>
+            ) : isPredictionLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Cargando...
+              </p>
+            ) : !prediction ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No hay predicción disponible para este producto.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl bg-secondary/40 border border-border/50">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Consumo diario prom.
+                  </p>
+                  <p className="text-xl font-bold font-mono">
+                    {prediction.consomoDiarioPromedio.toFixed(1)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">unidades/día</p>
+                </div>
+                <div className="p-3 rounded-xl bg-secondary/40 border border-border/50">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Demanda estimada 30d
+                  </p>
+                  <p className="text-xl font-bold font-mono">
+                    {prediction.demandaEstimada30Dias.toFixed(0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">unidades</p>
+                </div>
+                <div className="p-3 rounded-xl bg-secondary/40 border border-border/50">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Punto de reorden
+                  </p>
+                  <p className="text-xl font-bold font-mono">
+                    {prediction.puntoReorden}
+                  </p>
+                  <p className="text-xs text-muted-foreground">unidades</p>
+                </div>
+                <div className="p-3 rounded-xl bg-secondary/40 border border-border/50">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Tendencia
+                  </p>
+                  {(() => {
+                    const cfg = getTrendConfig(prediction.tendencia);
+                    const Icon = cfg.icon;
+                    return (
+                      <div
+                        className={cn(
+                          "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                          cfg.bg,
+                          cfg.color,
+                        )}
+                      >
+                        <Icon className="w-3 h-3" />
+                        {cfg.label}
+                      </div>
+                    );
+                  })()}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    calc.{" "}
+                    {new Date(prediction.calculadoEn).toLocaleDateString(
+                      "es-MX",
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -436,109 +373,123 @@ export default function AnalysisPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-border/50">
-                <TableHead className="text-muted-foreground">
-                  Producto
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Prom. 30d
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Prom. 60d
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Prom. 90d
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Tendencia
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Rotación
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Punto Reorden
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {productAnalysis.map((product, index) => {
-                const trendConfig = getTrendConfig(product.trend);
-                const rotationConfig = getRotationConfig(product.rotation);
-                const TrendIcon = trendConfig.icon;
+          {isAnalysisLoading ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">
+              Cargando...
+            </p>
+          ) : isAnalysisError ? (
+            <div className="flex flex-col items-center gap-3 py-6">
+              <p className="text-sm text-critical">
+                Error al cargar el análisis de productos.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => refetchAnalysis()}>
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                Reintentar
+              </Button>
+            </div>
+          ) : analysisList.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">
+              No hay datos de análisis disponibles.
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-border/50">
+                  <TableHead className="text-muted-foreground">
+                    Producto
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-center">
+                    Prom. 30d
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-center">
+                    Prom. 60d
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-center">
+                    Prom. 90d
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-center">
+                    Tendencia
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-center">
+                    Rotación
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-center">
+                    Punto Reorden
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {analysisList.map((product, index) => {
+                  const trendConfig = getTrendConfig(product.tendencia);
+                  const rotationConfig = getRotationConfig(product.rotacion);
+                  const TrendIcon = trendConfig.icon;
 
-                return (
-                  <TableRow
-                    key={product.id}
-                    className="border-border/50 hover:bg-secondary/30 transition-colors animate-fade-in opacity-0"
-                    style={{
-                      animationDelay: `${400 + index * 50}ms`,
-                      animationFillMode: "forwards",
-                    }}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Package className="w-4 h-4 text-primary" />
+                  return (
+                    <TableRow
+                      key={product.productoId}
+                      className="border-border/50 hover:bg-secondary/30 transition-colors animate-fade-in opacity-0"
+                      style={{
+                        animationDelay: `${400 + index * 50}ms`,
+                        animationFillMode: "forwards",
+                      }}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Package className="w-4 h-4 text-primary" />
+                          </div>
+                          <span className="font-medium">{product.nombre}</span>
                         </div>
-                        <span className="font-medium">{product.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center font-mono">
-                      <span
-                        className={cn(
-                          periodFilter === "30" && "text-primary font-bold",
-                        )}
-                      >
-                        {product.avg30}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center font-mono">
-                      <span
-                        className={cn(
-                          periodFilter === "60" && "text-primary font-bold",
-                        )}
-                      >
-                        {product.avg60}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center font-mono">
-                      <span
-                        className={cn(
-                          periodFilter === "90" && "text-primary font-bold",
-                        )}
-                      >
-                        {product.avg90}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div
-                        className={cn(
-                          "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                          trendConfig.bg,
-                          trendConfig.color,
-                        )}
-                      >
-                        <TrendIcon className="w-3 h-3" />
-                        {trendConfig.label}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge className={cn("border", rotationConfig.color)}>
-                        {rotationConfig.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-secondary/50 text-foreground font-mono font-bold">
-                        {product.reorderPoint}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                      <TableCell className="text-center font-mono">
+                        <span
+                          className={cn(
+                            periodFilter === "30" && "text-primary font-bold",
+                          )}
+                        >
+                          {product.promedio30d.toFixed(1)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center font-mono">
+                        <span
+                          className={cn(
+                            periodFilter === "60" && "text-primary font-bold",
+                          )}
+                        >
+                          {product.promedio60d.toFixed(1)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center font-mono text-muted-foreground">
+                        —
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div
+                          className={cn(
+                            "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                            trendConfig.bg,
+                            trendConfig.color,
+                          )}
+                        >
+                          <TrendIcon className="w-3 h-3" />
+                          {trendConfig.label}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge className={cn("border", rotationConfig.color)}>
+                          {rotationConfig.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-secondary/50 text-foreground font-mono font-bold">
+                          {product.puntoReorden}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -568,7 +519,9 @@ export default function AnalysisPage() {
               <p className="text-sm text-muted-foreground mb-1">
                 Productos en Riesgo
               </p>
-              <p className="text-2xl font-bold text-foreground">3</p>
+              <p className="text-2xl font-bold text-foreground">
+                {isAnalysisLoading ? "—" : atRiskCount}
+              </p>
               <p className="text-xs text-warning mt-1">
                 requieren atención inmediata
               </p>
