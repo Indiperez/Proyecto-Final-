@@ -1,4 +1,5 @@
 using InventTrackAI.API.Data;
+using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Models;
 using InventTrackAI.API.Repositories.Interfaces;
 using MySql.Data.MySqlClient;
@@ -97,6 +98,58 @@ namespace InventTrackAI.API.Repositories
 
             var calculadoEn = Convert.ToDateTime(result);
             return (DateTime.Now - calculadoEn).TotalMinutes < minutos;
+        }
+
+        public List<ProductoAnalisisDto> ObtenerAnalisisCompleto()
+        {
+            var lista = new List<ProductoAnalisisDto>();
+            using var conn = _db.GetConnection();
+            var query = @"SELECT
+                              pd.ProductoId,
+                              p.Nombre,
+                              p.StockActual,
+                              pd.ConsumoDiarioPromedio AS Promedio30d,
+                              IFNULL((
+                                  SELECT SUM(hc.Cantidad) / 60.0
+                                  FROM HistoricoConsumo hc
+                                  WHERE hc.ProductoId = pd.ProductoId
+                                    AND hc.Fecha >= DATE_SUB(NOW(), INTERVAL 60 DAY)
+                              ), 0) AS Promedio60d,
+                              pd.Tendencia,
+                              CASE
+                                  WHEN pd.ConsumoDiarioPromedio >= 1.0 THEN 'Alta'
+                                  WHEN pd.ConsumoDiarioPromedio >= 0.3 THEN 'Media'
+                                  ELSE 'Baja'
+                              END AS Rotacion,
+                              pd.PuntoReorden,
+                              pd.DemandaEstimada30Dias,
+                              pd.CalculadoEn
+                          FROM PrediccionDemanda pd
+                          INNER JOIN Productos p ON pd.ProductoId = p.Id
+                          ORDER BY pd.ConsumoDiarioPromedio DESC";
+
+            var cmd = new MySqlCommand(query, conn);
+            conn.Open();
+            var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                lista.Add(new ProductoAnalisisDto
+                {
+                    ProductoId            = Convert.ToInt32(reader["ProductoId"]),
+                    Nombre                = reader["Nombre"].ToString(),
+                    StockActual           = Convert.ToInt32(reader["StockActual"]),
+                    Promedio30d           = Convert.ToDecimal(reader["Promedio30d"]),
+                    Promedio60d           = Convert.ToDecimal(reader["Promedio60d"]),
+                    Tendencia             = reader["Tendencia"].ToString(),
+                    Rotacion              = reader["Rotacion"].ToString(),
+                    PuntoReorden          = Convert.ToDecimal(reader["PuntoReorden"]),
+                    DemandaEstimada30Dias = Convert.ToDecimal(reader["DemandaEstimada30Dias"]),
+                    CalculadoEn           = Convert.ToDateTime(reader["CalculadoEn"])
+                });
+            }
+
+            return lista;
         }
 
         private PrediccionDemanda MapPrediccion(MySqlDataReader reader)

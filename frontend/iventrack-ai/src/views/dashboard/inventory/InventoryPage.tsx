@@ -37,23 +37,27 @@ import {
 // import { useInventoryStore } from "@/lib/store"
 import { cn } from "@/lib/utils";
 import type { Product } from "@/types/dashboard";
+import { useProducts } from "@/services/products/useProducts";
+import type { Producto } from "@/types/api";
 
 type StockStatus = "all" | "normal" | "low" | "critical";
 
 export default function InventoryPage() {
-  //   const { products } = useInventoryStore()
-  const products: Product[] = [
-    {
-      category: "",
-      code: "",
-      currentStock: 3,
-      id: "",
-      leadTime: 2,
-      name: "",
-      status: "active",
-      stockMin: 1,
-    },
-  ];
+  const { data: productsData } = useProducts();
+
+  const productList: Producto[] = Array.isArray(productsData) ? productsData : (productsData && typeof productsData === 'object' && 'data' in productsData ? (productsData as { data: Producto[] }).data : []);
+
+  const products: Product[] = productList.map(p => ({
+    id: p.id.toString(),
+    code: `PROD-${p.id}`,
+    name: p.nombre,
+    category: "General",
+    currentStock: p.stockActual,
+    stockMin: p.stockMinimo,
+    leadTime: 0,
+    status: "active"
+  }));
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<StockStatus>("all");
 

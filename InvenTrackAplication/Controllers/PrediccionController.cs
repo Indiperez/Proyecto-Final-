@@ -44,10 +44,10 @@ namespace InventTrackAI.API.Controllers
 
         // GET api/prediccion/analisis
         [HttpGet("analisis")]
-        public IActionResult ObtenerTodos()
+        public IActionResult ObtenerAnalisis()
         {
-            var predicciones = _prediccionRepository.ObtenerTodos();
-            return Ok(predicciones);
+            var resultado = _prediccionRepository.ObtenerAnalisisCompleto();
+            return Ok(resultado);
         }
     }
 }

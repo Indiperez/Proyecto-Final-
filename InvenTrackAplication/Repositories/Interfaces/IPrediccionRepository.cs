@@ -1,3 +1,4 @@
+using InventTrackAI.API.DTOs;
 using InventTrackAI.API.Models;
 
 namespace InventTrackAI.API.Repositories.Interfaces
@@ -8,5 +9,6 @@ namespace InventTrackAI.API.Repositories.Interfaces
         PrediccionDemanda? ObtenerPorProducto(int productoId);
         List<PrediccionDemanda> ObtenerTodos();
         bool FueCalculadaHace(int productoId, int minutos);
+        List<ProductoAnalisisDto> ObtenerAnalisisCompleto();
     }
 }

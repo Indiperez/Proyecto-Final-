@@ -1,5 +1,3 @@
-
-
 import { useState } from "react";
 import {
   AlertTriangle,
@@ -10,6 +8,7 @@ import {
   Package,
   Check,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,84 +20,54 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import { cn } from "@/lib/utils";
-import type { Alert, Product } from "@/types/dashboard";
+import type { Alert } from "@/types/dashboard";
+import { useAlerts, useMarkAlertAsRead } from "@/services/alerts/useAlerts";
 
 type StatusFilter = "all" | "pending" | "attended";
 type PriorityFilter = "all" | "high" | "medium" | "low";
 
 export default function AlertsPage() {
-  const alerts: Alert[] = [
-    {
-      id: "1",
-      productId: "4",
-      type: "low_stock",
-      priority: "high",
-      date: "2025-02-02",
-      status: "pending",
-      recommendation:
-        "Reordenar 30 unidades de Mouse Inalámbrico para mantener nivel óptimo",
-    },
-    {
-      id: "2",
-      productId: "6",
-      type: "critical_stock",
-      priority: "high",
-      date: "2025-02-02",
-      status: "pending",
-      recommendation:
-        "Stock crítico: Ordenar inmediatamente 15 unidades de Webcam HD 1080p",
-    },
-    {
-      id: "3",
-      productId: "9",
-      type: "critical_stock",
-      priority: "high",
-      date: "2025-02-01",
-      status: "pending",
-      recommendation: "Sin stock: Reordenar urgente SSD Samsung 1TB",
-    },
-    {
-      id: "4",
-      productId: "2",
-      type: "low_stock",
-      priority: "medium",
-      date: "2025-02-01",
-      status: "attended",
-      recommendation: 'Considerar reorden de Monitor Samsung 27"',
-    },
-    {
-      id: "5",
-      productId: "10",
-      type: "no_movement",
-      priority: "low",
-      date: "2025-01-25",
-      status: "pending",
-      recommendation:
-        "RAM DDR4 16GB sin movimiento en 30+ días. Evaluar promoción o redistribución.",
-    },
-  ];
-  const products: Product[] = [
-    {
-      category: "",
-      code: "",
-      currentStock: 3,
-      id: "",
-      leadTime: 2,
-      name: "",
-      status: "active",
-      stockMin: 1,
-    },
-  ];
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
 
-  const getProductName = (productId: string) => {
-    return (
-      products.find((p) => p.id === productId)?.name || "Producto desconocido"
-    );
-  };
+  const { data: alertsData, isLoading, isError, refetch } = useAlerts();
+  const markAsRead = useMarkAlertAsRead();
+
+  // Transform Alerta → Alert UI type
+  const alerts: Alert[] = (alertsData ?? []).map((alerta) => {
+    const msg = alerta.mensaje.toLowerCase();
+
+    let type: Alert["type"] = "reorder";
+    let priority: Alert["priority"] = "medium";
+
+    if (msg.includes("stock mínimo") || msg.includes("stock minimo")) {
+      type = "critical_stock";
+      priority = "high";
+    } else if (msg.includes("punto de reorden")) {
+      type = "reorder";
+      priority = "medium";
+    } else if (
+      msg.includes("baja rotación") ||
+      msg.includes("baja rotacion")
+    ) {
+      type = "no_movement";
+      priority = "low";
+    } else if (msg.includes("alta demanda")) {
+      type = "low_stock";
+      priority = "medium";
+    }
+
+    return {
+      id: alerta.id.toString(),
+      productId: alerta.productoId.toString(),
+      type,
+      priority,
+      date: new Date(alerta.fecha).toISOString().split("T")[0],
+      status: alerta.leida ? "attended" : "pending",
+      recommendation: alerta.mensaje,
+    };
+  });
 
   const getPriorityConfig = (priority: string) => {
     switch (priority) {
@@ -197,7 +166,7 @@ export default function AlertsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {pendingCount}
+                  {isLoading ? "—" : pendingCount}
                 </p>
                 <p className="text-sm text-muted-foreground">Pendientes</p>
               </div>
@@ -221,7 +190,7 @@ export default function AlertsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {highPriorityCount}
+                  {isLoading ? "—" : highPriorityCount}
                 </p>
                 <p className="text-sm text-muted-foreground">Alta Prioridad</p>
               </div>
@@ -245,7 +214,7 @@ export default function AlertsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {attendedCount}
+                  {isLoading ? "—" : attendedCount}
                 </p>
                 <p className="text-sm text-muted-foreground">Atendidas</p>
               </div>
@@ -292,12 +261,51 @@ export default function AlertsPage() {
 
       {/* Alerts List */}
       <div className="space-y-3">
-        {filteredAlerts.length === 0 ? (
+        {/* Loading state */}
+        {isLoading &&
+          Array.from({ length: 3 }).map((_, i) => (
+            <Card
+              key={i}
+              className="border-border/50 bg-card/80 backdrop-blur-sm animate-pulse"
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-secondary/50 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-secondary/50 rounded w-1/3" />
+                    <div className="h-4 bg-secondary/50 rounded w-1/2" />
+                    <div className="h-10 bg-secondary/50 rounded" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+        {/* Error state */}
+        {isError && (
+          <div className="text-center py-16 animate-fade-in">
+            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-critical opacity-70" />
+            <p className="text-muted-foreground mb-4">
+              Error al cargar las alertas
+            </p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+              Reintentar
+            </Button>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && !isError && filteredAlerts.length === 0 && (
           <div className="text-center py-16 animate-fade-in">
             <Info className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
             <p className="text-muted-foreground">No se encontraron alertas</p>
           </div>
-        ) : (
+        )}
+
+        {/* Alert cards */}
+        {!isLoading &&
+          !isError &&
           filteredAlerts.map((alert, index) => {
             const config = getPriorityConfig(alert.priority);
             const Icon = config.icon;
@@ -347,7 +355,7 @@ export default function AlertsPage() {
                       <div className="flex items-center gap-2 mb-2">
                         <Package className="w-4 h-4 text-muted-foreground" />
                         <span className="font-medium">
-                          {getProductName(alert.productId)}
+                          Producto #{alert.productId}
                         </span>
                       </div>
 
@@ -365,7 +373,8 @@ export default function AlertsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {} /*attendAlert(alert.id)*/}
+                        onClick={() => markAsRead.mutate(Number(alert.id))}
+                        disabled={markAsRead.isPending}
                         className="flex-shrink-0 hover:bg-success/10 hover:text-success hover:border-success/30"
                       >
                         <Check className="w-4 h-4 mr-2" />
@@ -376,16 +385,17 @@ export default function AlertsPage() {
                 </CardContent>
               </Card>
             );
-          })
-        )}
+          })}
       </div>
 
       {/* Summary */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground animate-fade-in">
-        <p>
-          Mostrando {filteredAlerts.length} de {alerts.length} alertas
-        </p>
-      </div>
+      {!isLoading && !isError && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground animate-fade-in">
+          <p>
+            Mostrando {filteredAlerts.length} de {alerts.length} alertas
+          </p>
+        </div>
+      )}
     </div>
   );
 }

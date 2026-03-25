@@ -65,6 +65,8 @@ export function useCreateProduct() {
             console.log('useCreateProduct onSuccess:', response);
             if (!response) return;
             queryClient.invalidateQueries({ queryKey: productKeys.all });
+            queryClient.invalidateQueries({ queryKey: ["predictions"] });
+            queryClient.invalidateQueries({ queryKey: ["movements", "list"] });
             // Se asume que el mensaje viene directo en el objeto (no en .data.message)
             toast.success(response.message || "Producto creado exitosamente");
         },
@@ -84,6 +86,8 @@ export function useUpdateProduct() {
         onSuccess: (response) => {
             if (!response) return;
             queryClient.invalidateQueries({ queryKey: productKeys.all });
+            queryClient.invalidateQueries({ queryKey: ["predictions"] });
+            queryClient.invalidateQueries({ queryKey: ["movements", "list"] });
             toast.success(response.message || "Producto actualizado exitosamente");
         },
         onError: (error: AxiosError<ApiError>) => {
@@ -100,6 +104,8 @@ export function useDeleteProduct() {
         onSuccess: (response) => {
             if (!response) return;
             queryClient.invalidateQueries({ queryKey: productKeys.all });
+            queryClient.invalidateQueries({ queryKey: ["predictions"] });
+            queryClient.invalidateQueries({ queryKey: ["movements", "list"] });
             toast.success(response.message || "Producto eliminado exitosamente");
         },
         onError: (error: AxiosError<ApiError>) => {
