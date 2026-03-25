@@ -20,12 +20,19 @@ GO
 CREATE TABLE MovimientosInventario (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     ProductoId INT NOT NULL,
-    Tipo NVARCHAR(10) CHECK (Tipo IN ('Entrada', 'Salida')),
-    Cantidad INT NOT NULL,
-    Fecha DATETIME DEFAULT GETDATE(),
-    CONSTRAINT FK_Movimientos_Productos
-        FOREIGN KEY (ProductoId) REFERENCES Productos(Id)
+    UsuarioId INT NOT NULL,
+    Tipo NVARCHAR(10) CHECK (Tipo IN ('Entrada', 'Salida', 'Ajuste')),
+    Cantidad INT NOT NULL CHECK (Cantidad > 0),
+    Fecha DATETIME NOT NULL DEFAULT GETDATE(),
+    Observacion NVARCHAR(255),
+
+    CONSTRAINT FK_Movimientos_Productos 
+        FOREIGN KEY (ProductoId) REFERENCES Productos(Id),
+
+    CONSTRAINT FK_Movimientos_Usuarios
+        FOREIGN KEY (UsuarioId) REFERENCES Usuarios(Id)
 );
+
 GO
 
 -- Datos de prueba
@@ -37,5 +44,62 @@ VALUES
 GO
 
 
-SELECT * FROM Productos;
-SELECT * FROM MovimientosInventario;
+/* Crear tabla de Proveedores */
+CREATE TABLE Proveedores (
+    Id INT IDENTITY PRIMARY KEY,
+    Nombre NVARCHAR(100) NOT NULL,
+    TiempoEntregaDias INT NOT NULL,
+    FechaCreacion DATETIME DEFAULT GETDATE()
+);
+/* Modificar tabla de Producto */
+ALTER TABLE Productos
+ADD ProveedorId INT;
+
+ALTER TABLE Productos
+ADD CONSTRAINT FK_Productos_Proveedores
+FOREIGN KEY (ProveedorId) REFERENCES Proveedores(Id);
+
+/* Crear tabla de alertas */
+
+CREATE TABLE Alertas (
+    Id INT IDENTITY PRIMARY KEY,
+    ProductoId INT NOT NULL,
+    Mensaje NVARCHAR(200) NOT NULL,
+    Fecha DATETIME DEFAULT GETDATE(),
+    Leida BIT DEFAULT 0,
+    CONSTRAINT FK_Alertas_Productos
+        FOREIGN KEY (ProductoId) REFERENCES Productos(Id)
+);
+/* Datos de prueba */
+INSERT INTO Proveedores (Nombre, TiempoEntregaDias)
+VALUES ('Proveedor Central', 10);
+
+INSERT INTO Productos (
+    Nombre,
+    Descripcion,
+    StockActual,
+    StockMinimo,
+    FechaCreacion,
+    ProveedorId
+)
+VALUES (
+    'Arroz Especial',
+    'Producto de prueba para alerta de reorden',
+    5,      -- StockActual bajo
+    30,     -- StockMinimo alto
+    GETDATE(),
+    1       -- Id del proveedor
+);
+
+/* Modificando la tabla productos */
+ALTER TABLE Productos
+ADD PuntoReorden INT NOT NULL DEFAULT 0;
+
+SELECT * FROM MovimientosInventario
+SELECT * FROM Alertas;
+SELECT * FROM Productos;SSS
+SELECT * FROM Proveedores;
+
+UPDATE Productos 
+SET ProveedorId = 1
+WHERE ProveedorId IS NULL;

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import {
   FileText,
@@ -9,8 +7,10 @@ import {
   Calendar,
   Package,
   BarChart3,
-  PieChart,
+  Target,
   Eye,
+  RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,15 +43,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
 import { cn } from "@/lib/utils";
-import type { Product } from "@/types/dashboard";
+import { toast } from "sonner";
+import { useProducts } from "@/services/products/useProducts";
+import {
+  useLowStockProducts,
+  useHighRotationProducts,
+  useLowRotationProducts,
+  useReorderPointProducts,
+} from "@/services/products/useProducts";
+import type { Producto, PuntoReordenDto } from "@/types/api";
 
 type ReportType =
   | "high_rotation"
   | "low_rotation"
-  | "consumption"
-  | "stock_vs_demand";
+  | "stock_bajo"
+  | "reorder_point";
 
 interface Report {
   id: ReportType;
@@ -80,299 +87,455 @@ const reports: Report[] = [
     bg: "bg-warning/10",
   },
   {
-    id: "consumption",
-    title: "Consumo por Período",
-    description: "Análisis detallado de consumo de inventario",
-    icon: BarChart3,
+    id: "stock_bajo",
+    title: "Stock Bajo",
+    description: "Productos por debajo del stock mínimo requerido",
+    icon: AlertTriangle,
+    color: "text-critical",
+    bg: "bg-critical/10",
+  },
+  {
+    id: "reorder_point",
+    title: "Punto de Reorden",
+    description: "Productos que requieren reordenamiento según demanda",
+    icon: Target,
     color: "text-primary",
     bg: "bg-primary/10",
   },
-  {
-    id: "stock_vs_demand",
-    title: "Stock vs Demanda",
-    description: "Comparación entre stock actual y demanda proyectada",
-    icon: PieChart,
-    color: "text-primary",
-    bg: "bg-primary/10",
-  },
 ];
 
-// Mock report data
-const highRotationData = [
-  {
-    product: "Mouse Inalámbrico",
-    code: "PRD-004",
-    movements: 45,
-    percentage: 92,
-  },
-  {
-    product: "Teclado Mecánico RGB",
-    code: "PRD-003",
-    movements: 38,
-    percentage: 85,
-  },
-  { product: "Cable HDMI 2m", code: "PRD-007", movements: 32, percentage: 78 },
-  {
-    product: "Laptop Dell XPS 15",
-    code: "PRD-001",
-    movements: 28,
-    percentage: 72,
-  },
-  {
-    product: "Auriculares Bluetooth",
-    code: "PRD-005",
-    movements: 24,
-    percentage: 65,
-  },
-];
+// ─── Reusable skeleton rows ──────────────────────────────────────────────────
 
-const lowRotationData = [
-  {
-    product: "RAM DDR4 16GB",
-    code: "PRD-010",
-    movements: 2,
-    daysWithoutMovement: 35,
-  },
-  {
-    product: "SSD Samsung 1TB",
-    code: "PRD-009",
-    movements: 4,
-    daysWithoutMovement: 28,
-  },
-  {
-    product: "Webcam HD 1080p",
-    code: "PRD-006",
-    movements: 6,
-    daysWithoutMovement: 21,
-  },
-];
+function SkeletonRows({ cols }: { cols: number }) {
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <TableRow key={i} className="border-border/50">
+          {Array.from({ length: cols }).map((_, j) => (
+            <TableCell key={j}>
+              <div className="h-4 bg-secondary/50 rounded animate-pulse" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
 
-const consumptionData = [
-  { period: "Semana 1", entries: 45, exits: 38, balance: 7 },
-  { period: "Semana 2", entries: 52, exits: 48, balance: 4 },
-  { period: "Semana 3", entries: 38, exits: 42, balance: -4 },
-  { period: "Semana 4", entries: 65, exits: 55, balance: 10 },
-];
+function EmptyRow({ cols, message }: { cols: number; message: string }) {
+  return (
+    <TableRow className="border-border/50">
+      <TableCell colSpan={cols} className="text-center text-muted-foreground py-8">
+        {message}
+      </TableCell>
+    </TableRow>
+  );
+}
 
-const stockVsDemandData = [
-  {
-    product: "Mouse Inalámbrico",
-    stock: 5,
-    demand: 30,
-    coverage: "0.5 semanas",
-  },
-  { product: "Webcam HD 1080p", stock: 2, demand: 15, coverage: "0.4 semanas" },
-  {
-    product: 'Monitor Samsung 27"',
-    stock: 8,
-    demand: 12,
-    coverage: "2.1 semanas",
-  },
-  {
-    product: "Teclado Mecánico RGB",
-    stock: 45,
-    demand: 25,
-    coverage: "5.6 semanas",
-  },
-];
+function ErrorRow({
+  cols,
+  onRetry,
+}: {
+  cols: number;
+  onRetry: () => void;
+}) {
+  return (
+    <TableRow className="border-border/50">
+      <TableCell colSpan={cols} className="text-center py-8">
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-sm text-critical">Error al cargar datos.</p>
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+            Reintentar
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+// ─── Table renderers ─────────────────────────────────────────────────────────
+
+function HighRotationTable({
+  data,
+  isLoading,
+  isError,
+  refetch,
+}: {
+  data: Producto[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
+}) {
+  const COLS = 4;
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="border-border/50">
+          <TableHead className="text-muted-foreground">Producto</TableHead>
+          <TableHead className="text-muted-foreground text-center">Stock actual</TableHead>
+          <TableHead className="text-muted-foreground text-center">Stock mínimo</TableHead>
+          <TableHead className="text-muted-foreground text-center">Fecha creación</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {isLoading ? (
+          <SkeletonRows cols={COLS} />
+        ) : isError ? (
+          <ErrorRow cols={COLS} onRetry={refetch} />
+        ) : !data || data.length === 0 ? (
+          <EmptyRow cols={COLS} message="No hay productos en esta categoría" />
+        ) : (
+          data.map((p) => (
+            <TableRow key={p.id} className="border-border/50">
+              <TableCell className="font-medium">{p.nombre}</TableCell>
+              <TableCell className="text-center font-mono">{p.stockActual}</TableCell>
+              <TableCell className="text-center font-mono text-muted-foreground">{p.stockMinimo}</TableCell>
+              <TableCell className="text-center text-muted-foreground">
+                {new Date(p.fechaDeCreacion).toLocaleDateString("es-MX")}
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+
+function LowRotationTable({
+  data,
+  isLoading,
+  isError,
+  refetch,
+}: {
+  data: Producto[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
+}) {
+  const COLS = 4;
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="border-border/50">
+          <TableHead className="text-muted-foreground">Producto</TableHead>
+          <TableHead className="text-muted-foreground text-center">Stock actual</TableHead>
+          <TableHead className="text-muted-foreground text-center">Stock mínimo</TableHead>
+          <TableHead className="text-muted-foreground text-center">Fecha creación</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {isLoading ? (
+          <SkeletonRows cols={COLS} />
+        ) : isError ? (
+          <ErrorRow cols={COLS} onRetry={refetch} />
+        ) : !data || data.length === 0 ? (
+          <EmptyRow cols={COLS} message="No hay productos en esta categoría" />
+        ) : (
+          data.map((p) => (
+            <TableRow key={p.id} className="border-border/50">
+              <TableCell className="font-medium">{p.nombre}</TableCell>
+              <TableCell className="text-center font-mono">{p.stockActual}</TableCell>
+              <TableCell className="text-center font-mono text-muted-foreground">{p.stockMinimo}</TableCell>
+              <TableCell className="text-center text-muted-foreground">
+                {new Date(p.fechaDeCreacion).toLocaleDateString("es-MX")}
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+
+function LowStockTable({
+  data,
+  isLoading,
+  isError,
+  refetch,
+}: {
+  data: Producto[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
+}) {
+  const COLS = 4;
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="border-border/50">
+          <TableHead className="text-muted-foreground">Producto</TableHead>
+          <TableHead className="text-muted-foreground text-center">Stock actual</TableHead>
+          <TableHead className="text-muted-foreground text-center">Stock mínimo</TableHead>
+          <TableHead className="text-muted-foreground text-center">Diferencia</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {isLoading ? (
+          <SkeletonRows cols={COLS} />
+        ) : isError ? (
+          <ErrorRow cols={COLS} onRetry={refetch} />
+        ) : !data || data.length === 0 ? (
+          <EmptyRow cols={COLS} message="No hay productos en esta categoría" />
+        ) : (
+          data.map((p) => {
+            const diferencia = p.stockActual - p.stockMinimo;
+            return (
+              <TableRow key={p.id} className="border-border/50">
+                <TableCell className="font-medium">{p.nombre}</TableCell>
+                <TableCell className="text-center font-mono">{p.stockActual}</TableCell>
+                <TableCell className="text-center font-mono text-muted-foreground">{p.stockMinimo}</TableCell>
+                <TableCell className="text-center">
+                  <span
+                    className={cn(
+                      "font-mono font-semibold",
+                      diferencia < 0 ? "text-critical" : "text-success",
+                    )}
+                  >
+                    {diferencia >= 0 ? "+" : ""}
+                    {diferencia}
+                  </span>
+                </TableCell>
+              </TableRow>
+            );
+          })
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+
+function ReorderPointTable({
+  data,
+  isLoading,
+  isError,
+  refetch,
+}: {
+  data: PuntoReordenDto[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
+}) {
+  const COLS = 6;
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="border-border/50">
+          <TableHead className="text-muted-foreground">Producto</TableHead>
+          <TableHead className="text-muted-foreground text-center">Stock actual</TableHead>
+          <TableHead className="text-muted-foreground text-center">Stock mínimo</TableHead>
+          <TableHead className="text-muted-foreground text-center">Punto reorden</TableHead>
+          <TableHead className="text-muted-foreground text-center">Lead time</TableHead>
+          <TableHead className="text-muted-foreground text-center">Acción</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {isLoading ? (
+          <SkeletonRows cols={COLS} />
+        ) : isError ? (
+          <ErrorRow cols={COLS} onRetry={refetch} />
+        ) : !data || data.length === 0 ? (
+          <EmptyRow cols={COLS} message="No hay productos en esta categoría" />
+        ) : (
+          data.map((p) => (
+            <TableRow key={p.productoId} className="border-border/50">
+              <TableCell className="font-medium">{p.producto}</TableCell>
+              <TableCell className="text-center font-mono">{p.stockActual}</TableCell>
+              <TableCell className="text-center font-mono text-muted-foreground">{p.stockMinimo}</TableCell>
+              <TableCell className="text-center font-mono">{p.puntoReorden}</TableCell>
+              <TableCell className="text-center text-muted-foreground">
+                {p.tiempoEntregaDias}d
+              </TableCell>
+              <TableCell className="text-center">
+                {p.reordenar ? (
+                  <Badge className="bg-critical/10 text-critical border-critical/20 border">
+                    Reordenar ya
+                  </Badge>
+                ) : (
+                  <Badge className="bg-success/10 text-success border-success/20 border">
+                    OK
+                  </Badge>
+                )}
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
-  const products: Product[] = [
-    {
-      category: "",
-      code: "",
-      currentStock: 3,
-      id: "",
-      leadTime: 2,
-      name: "",
-      status: "active",
-      stockMin: 1,
-    },
-  ];
   const [periodFilter, setPeriodFilter] = useState("30");
   const [selectedReport, setSelectedReport] = useState<ReportType | null>(null);
 
+  const { data: productsData } = useProducts();
+  const productList: Producto[] = Array.isArray(productsData) ? productsData : [];
+
+  const {
+    data: highRotationData,
+    isLoading: loadingHigh,
+    isError: errorHigh,
+    refetch: refetchHigh,
+  } = useHighRotationProducts();
+
+  const {
+    data: lowRotationData,
+    isLoading: loadingLow,
+    isError: errorLow,
+    refetch: refetchLow,
+  } = useLowRotationProducts();
+
+  const {
+    data: lowStockData,
+    isLoading: loadingStock,
+    isError: errorStock,
+    refetch: refetchStock,
+  } = useLowStockProducts();
+
+  const {
+    data: reorderData,
+    isLoading: loadingReorder,
+    isError: errorReorder,
+    refetch: refetchReorder,
+  } = useReorderPointProducts();
+
   const exportToCSV = (reportId: ReportType) => {
-    // In a real app, this would generate and download a CSV file
-    alert(`Exportando reporte: ${reportId}`);
+    let rows: string[][] = [];
+    let filename = "";
+
+    switch (reportId) {
+      case "high_rotation":
+        if (!highRotationData?.length) {
+          toast.error("No hay datos para exportar");
+          return;
+        }
+        filename = "reporte-alta-rotacion.csv";
+        rows = [
+          ["Producto", "Stock Actual", "Stock Mínimo", "Fecha Creación"],
+          ...highRotationData.map((p) => [
+            p.nombre,
+            p.stockActual.toString(),
+            p.stockMinimo.toString(),
+            new Date(p.fechaDeCreacion).toLocaleDateString("es-MX"),
+          ]),
+        ];
+        break;
+
+      case "low_rotation":
+        if (!lowRotationData?.length) {
+          toast.error("No hay datos para exportar");
+          return;
+        }
+        filename = "reporte-baja-rotacion.csv";
+        rows = [
+          ["Producto", "Stock Actual", "Stock Mínimo", "Fecha Creación"],
+          ...lowRotationData.map((p) => [
+            p.nombre,
+            p.stockActual.toString(),
+            p.stockMinimo.toString(),
+            new Date(p.fechaDeCreacion).toLocaleDateString("es-MX"),
+          ]),
+        ];
+        break;
+
+      case "stock_bajo":
+        if (!lowStockData?.length) {
+          toast.error("No hay datos para exportar");
+          return;
+        }
+        filename = "reporte-stock-bajo.csv";
+        rows = [
+          ["Producto", "Stock Actual", "Stock Mínimo", "Diferencia"],
+          ...lowStockData.map((p) => [
+            p.nombre,
+            p.stockActual.toString(),
+            p.stockMinimo.toString(),
+            (p.stockActual - p.stockMinimo).toString(),
+          ]),
+        ];
+        break;
+
+      case "reorder_point":
+        if (!reorderData?.length) {
+          toast.error("No hay datos para exportar");
+          return;
+        }
+        filename = "reporte-punto-reorden.csv";
+        rows = [
+          [
+            "Producto",
+            "Stock Actual",
+            "Stock Mínimo",
+            "Punto Reorden",
+            "Lead Time",
+            "Reordenar",
+          ],
+          ...reorderData.map((p) => [
+            p.producto,
+            p.stockActual.toString(),
+            p.stockMinimo.toString(),
+            p.puntoReorden.toString(),
+            `${p.tiempoEntregaDias}d`,
+            p.reordenar ? "Sí" : "No",
+          ]),
+        ];
+        break;
+    }
+
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Reporte exportado: ${filename}`);
   };
 
   const renderReportContent = (reportId: ReportType) => {
     switch (reportId) {
       case "high_rotation":
         return (
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border/50">
-                <TableHead className="text-muted-foreground">
-                  Producto
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Código
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Movimientos
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  % Rotación
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {highRotationData.map((item, index) => (
-                <TableRow key={index} className="border-border/50">
-                  <TableCell className="font-medium">{item.product}</TableCell>
-                  <TableCell className="text-center font-mono text-muted-foreground">
-                    {item.code}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {item.movements}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge className="bg-success/10 text-success border-success/20">
-                      {item.percentage}%
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <HighRotationTable
+            data={highRotationData ?? undefined}
+            isLoading={loadingHigh}
+            isError={errorHigh}
+            refetch={refetchHigh}
+          />
         );
-
       case "low_rotation":
         return (
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border/50">
-                <TableHead className="text-muted-foreground">
-                  Producto
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Código
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Movimientos
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Días sin movimiento
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lowRotationData.map((item, index) => (
-                <TableRow key={index} className="border-border/50">
-                  <TableCell className="font-medium">{item.product}</TableCell>
-                  <TableCell className="text-center font-mono text-muted-foreground">
-                    {item.code}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {item.movements}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge className="bg-warning/10 text-warning border-warning/20">
-                      {item.daysWithoutMovement} días
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <LowRotationTable
+            data={lowRotationData ?? undefined}
+            isLoading={loadingLow}
+            isError={errorLow}
+            refetch={refetchLow}
+          />
         );
-
-      case "consumption":
+      case "stock_bajo":
         return (
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border/50">
-                <TableHead className="text-muted-foreground">Período</TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Entradas
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Salidas
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Balance
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {consumptionData.map((item, index) => (
-                <TableRow key={index} className="border-border/50">
-                  <TableCell className="font-medium">{item.period}</TableCell>
-                  <TableCell className="text-center text-success">
-                    +{item.entries}
-                  </TableCell>
-                  <TableCell className="text-center text-critical">
-                    -{item.exits}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge
-                      className={cn(
-                        "border",
-                        item.balance >= 0
-                          ? "bg-success/10 text-success border-success/20"
-                          : "bg-critical/10 text-critical border-critical/20",
-                      )}
-                    >
-                      {item.balance >= 0 ? "+" : ""}
-                      {item.balance}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <LowStockTable
+            data={lowStockData ?? undefined}
+            isLoading={loadingStock}
+            isError={errorStock}
+            refetch={refetchStock}
+          />
         );
-
-      case "stock_vs_demand":
+      case "reorder_point":
         return (
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border/50">
-                <TableHead className="text-muted-foreground">
-                  Producto
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Stock Actual
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Demanda Proyectada
-                </TableHead>
-                <TableHead className="text-muted-foreground text-center">
-                  Cobertura
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {stockVsDemandData.map((item, index) => {
-                const isCritical = parseFloat(item.coverage) < 2;
-                return (
-                  <TableRow key={index} className="border-border/50">
-                    <TableCell className="font-medium">
-                      {item.product}
-                    </TableCell>
-                    <TableCell className="text-center">{item.stock}</TableCell>
-                    <TableCell className="text-center">{item.demand}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        className={cn(
-                          "border",
-                          isCritical
-                            ? "bg-critical/10 text-critical border-critical/20"
-                            : "bg-success/10 text-success border-success/20",
-                        )}
-                      >
-                        {item.coverage}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <ReorderPointTable
+            data={reorderData ?? undefined}
+            isLoading={loadingReorder}
+            isError={errorReorder}
+            refetch={refetchReorder}
+          />
         );
-
       default:
         return null;
     }
@@ -513,24 +676,32 @@ export default function ReportsPage() {
             <div className="p-4 rounded-xl bg-secondary/30 border border-border/30 text-center">
               <Package className="w-6 h-6 text-primary mx-auto mb-2" />
               <p className="text-2xl font-bold text-foreground">
-                {products.length}
+                {productList.length}
               </p>
               <p className="text-xs text-muted-foreground">Total Productos</p>
             </div>
             <div className="p-4 rounded-xl bg-secondary/30 border border-border/30 text-center">
               <TrendingUp className="w-6 h-6 text-success mx-auto mb-2" />
-              <p className="text-2xl font-bold text-foreground">156</p>
-              <p className="text-xs text-muted-foreground">Entradas</p>
+              <p className="text-2xl font-bold text-foreground">
+                {loadingHigh ? "—" : (highRotationData?.length ?? 0)}
+              </p>
+              <p className="text-xs text-muted-foreground">Alta Rotación</p>
             </div>
             <div className="p-4 rounded-xl bg-secondary/30 border border-border/30 text-center">
               <TrendingDown className="w-6 h-6 text-critical mx-auto mb-2" />
-              <p className="text-2xl font-bold text-foreground">142</p>
-              <p className="text-xs text-muted-foreground">Salidas</p>
+              <p className="text-2xl font-bold text-foreground">
+                {loadingStock ? "—" : (lowStockData?.length ?? 0)}
+              </p>
+              <p className="text-xs text-muted-foreground">Stock Bajo</p>
             </div>
             <div className="p-4 rounded-xl bg-secondary/30 border border-border/30 text-center">
               <BarChart3 className="w-6 h-6 text-primary mx-auto mb-2" />
-              <p className="text-2xl font-bold text-foreground">+14</p>
-              <p className="text-xs text-muted-foreground">Balance Neto</p>
+              <p className="text-2xl font-bold text-foreground">
+                {loadingReorder
+                  ? "—"
+                  : (reorderData?.filter((p) => p.reordenar).length ?? 0)}
+              </p>
+              <p className="text-xs text-muted-foreground">Reordenar</p>
             </div>
           </div>
         </CardContent>

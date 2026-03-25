@@ -1,5 +1,3 @@
-
-
 import { useState } from "react";
 import {
   AlertTriangle,
@@ -21,84 +19,53 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import { cn } from "@/lib/utils";
-import type { Alert, Product } from "@/types/dashboard";
+import type { Alert } from "@/types/dashboard";
+import type { Alerta } from "@/types/api";
+import { useAlerts, useMarkAlertAsRead } from "@/services/alerts/useAlerts";
 
 type StatusFilter = "all" | "pending" | "attended";
 type PriorityFilter = "all" | "high" | "medium" | "low";
 
 export default function AlertsPage() {
-  const alerts: Alert[] = [
-    {
-      id: "1",
-      productId: "4",
-      type: "low_stock",
-      priority: "high",
-      date: "2025-02-02",
-      status: "pending",
-      recommendation:
-        "Reordenar 30 unidades de Mouse Inalámbrico para mantener nivel óptimo",
-    },
-    {
-      id: "2",
-      productId: "6",
-      type: "critical_stock",
-      priority: "high",
-      date: "2025-02-02",
-      status: "pending",
-      recommendation:
-        "Stock crítico: Ordenar inmediatamente 15 unidades de Webcam HD 1080p",
-    },
-    {
-      id: "3",
-      productId: "9",
-      type: "critical_stock",
-      priority: "high",
-      date: "2025-02-01",
-      status: "pending",
-      recommendation: "Sin stock: Reordenar urgente SSD Samsung 1TB",
-    },
-    {
-      id: "4",
-      productId: "2",
-      type: "low_stock",
-      priority: "medium",
-      date: "2025-02-01",
-      status: "attended",
-      recommendation: 'Considerar reorden de Monitor Samsung 27"',
-    },
-    {
-      id: "5",
-      productId: "10",
-      type: "no_movement",
-      priority: "low",
-      date: "2025-01-25",
-      status: "pending",
-      recommendation:
-        "RAM DDR4 16GB sin movimiento en 30+ días. Evaluar promoción o redistribución.",
-    },
-  ];
-  const products: Product[] = [
-    {
-      category: "",
-      code: "",
-      currentStock: 3,
-      id: "",
-      leadTime: 2,
-      name: "",
-      status: "active",
-      stockMin: 1,
-    },
-  ];
+  const { data: alertsData, isLoading, isError } = useAlerts();
+  const markAsRead = useMarkAlertAsRead();
+
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
 
-  const getProductName = (productId: string) => {
-    return (
-      products.find((p) => p.id === productId)?.name || "Producto desconocido"
-    );
-  };
+  const alerts: Alert[] = (alertsData ?? []).map((alerta: Alerta) => {
+    const msg = alerta.mensaje.toLowerCase();
+    let type: Alert["type"] = "reorder";
+    let priority: Alert["priority"] = "medium";
+
+    if (msg.includes("stock mínimo") || msg.includes("stock minimo")) {
+      type = "critical_stock";
+      priority = "high";
+    } else if (msg.includes("punto de reorden")) {
+      type = "reorder";
+      priority = "medium";
+    } else if (
+      msg.includes("baja rotación") ||
+      msg.includes("baja rotacion")
+    ) {
+      type = "no_movement";
+      priority = "low";
+    } else if (msg.includes("alta demanda")) {
+      type = "low_stock";
+      priority = "medium";
+    }
+
+    return {
+      id: alerta.id.toString(),
+      productId: alerta.productoId.toString(),
+      type,
+      priority,
+      date: new Date(alerta.fecha).toISOString().split("T")[0],
+      status: alerta.leida ? "attended" : "pending",
+      recommendation: alerta.mensaje,
+    };
+  });
 
   const getPriorityConfig = (priority: string) => {
     switch (priority) {
@@ -167,6 +134,33 @@ export default function AlertsPage() {
     (a) => a.status === "pending" && a.priority === "high",
   ).length;
   const attendedCount = alerts.filter((a) => a.status === "attended").length;
+
+  if (isLoading)
+    return (
+      <div className="space-y-6">
+        <div className="animate-fade-in">
+          <h1 className="text-2xl font-bold text-foreground">Alertas</h1>
+          <p className="text-muted-foreground mt-1">
+            Gestiona las alertas generadas automáticamente
+          </p>
+        </div>
+        <div className="text-center py-16 text-muted-foreground">
+          Cargando alertas...
+        </div>
+      </div>
+    );
+
+  if (isError)
+    return (
+      <div className="space-y-6">
+        <div className="animate-fade-in">
+          <h1 className="text-2xl font-bold text-foreground">Alertas</h1>
+        </div>
+        <div className="text-center py-16 text-muted-foreground">
+          Error al cargar alertas. Intenta de nuevo.
+        </div>
+      </div>
+    );
 
   return (
     <div className="space-y-6">
@@ -318,7 +312,7 @@ export default function AlertsPage() {
                   <div className="flex items-start gap-4">
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                        "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
                         config.bg,
                       )}
                     >
@@ -347,13 +341,13 @@ export default function AlertsPage() {
                       <div className="flex items-center gap-2 mb-2">
                         <Package className="w-4 h-4 text-muted-foreground" />
                         <span className="font-medium">
-                          {getProductName(alert.productId)}
+                          {`Producto #${alert.productId}`}
                         </span>
                       </div>
 
                       <div className="p-3 rounded-lg bg-secondary/30 border border-border/30">
                         <div className="flex items-start gap-2">
-                          <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                          <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                           <p className="text-sm text-muted-foreground">
                             {alert.recommendation}
                           </p>
@@ -365,8 +359,9 @@ export default function AlertsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {} /*attendAlert(alert.id)*/}
-                        className="flex-shrink-0 hover:bg-success/10 hover:text-success hover:border-success/30"
+                        onClick={() => markAsRead.mutate(Number(alert.id))}
+                        disabled={markAsRead.isPending}
+                        className="shrink-0 hover:bg-success/10 hover:text-success hover:border-success/30"
                       >
                         <Check className="w-4 h-4 mr-2" />
                         Marcar como atendida

@@ -5,13 +5,14 @@ import { LoginView } from "./views/auth/LoginView";
 import { LoadingPage } from "./views/LoadingPage";
 import { DashboardLayout } from "./layouts/dashboard/DashboardLayout";
 import { DashboardPage } from "./views/dashboard/DashboardPage";
-import { ProductsPage } from "./views/dashboard/products/ProductsPage";
+import { ProductsPage } from "@/views/dashboard/products/ProductsPage";
 import InventoryPage from "./views/dashboard/inventory/InventoryPage";
 import MovementsPage from "./views/dashboard/movements/MovementsPage";
 import AnalysisPage from "./views/dashboard/analysis/AnalysisPage";
 import AlertsPage from "./views/dashboard/alerts/AlertsPage";
 import ReportsPage from "./views/dashboard/reports/ReportsPage";
 import SettingsPage from "./views/dashboard/settings/SettingsPage";
+import { TestPage } from "./views/TestPage";
 
 export const Router = () => {
   return (
@@ -34,6 +35,8 @@ export const Router = () => {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
+
+        <Route path="/test" element={<TestPage />} />
       </Routes>
     </BrowserRouter>
   );

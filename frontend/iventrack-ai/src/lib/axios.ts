@@ -10,13 +10,14 @@ const PUBLIC_ROUTES = [
   "/auth/validate-token",
 ];
 
-const api = axios.create({ baseURL: import.meta.env.VITE_BASE_API_URL });
+// Use empty baseURL to work with vite proxy
+const api = axios.create({ baseURL: "" });
 
 api.interceptors.request.use((config) => {
   // No agregar el token si la ruta es pública
   if (!PUBLIC_ROUTES.some((route) => config.url?.startsWith(route))) {
     const token = getTokenLocalStorage();
-    if (!token) throw new Error("Token Not Found");
+    // if (!token) throw new Error("Token Not Found");
     if (token) config.headers.Authorization = `Bearer ${token}`;
   }
 
