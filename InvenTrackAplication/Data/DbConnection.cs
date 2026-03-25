@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+using MySql.Data.MySqlClient;
+
 namespace InventTrackAI.API.Data
 {
     public class DbConnection
@@ -10,9 +11,9 @@ namespace InventTrackAI.API.Data
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        public SqlConnection GetConnection()
+        public MySqlConnection GetConnection()
         {
-            return new SqlConnection(_connectionString);
+            return new MySqlConnection(_connectionString);
         }
     }
 }

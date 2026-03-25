@@ -6,6 +6,7 @@ namespace InventTrackAI.API.Repositories.Interfaces
     {
         void Upsert(PrediccionDemanda prediccion);
         PrediccionDemanda? ObtenerPorProducto(int productoId);
+        List<PrediccionDemanda> ObtenerTodos();
         bool FueCalculadaHace(int productoId, int minutos);
     }
 }

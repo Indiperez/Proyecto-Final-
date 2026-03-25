@@ -62,6 +62,24 @@ namespace InventTrackAI.API.Repositories
             return null;
         }
 
+        public List<PrediccionDemanda> ObtenerTodos()
+        {
+            var lista = new List<PrediccionDemanda>();
+            using var conn = _db.GetConnection();
+            var query = @"SELECT Id, ProductoId, ConsumoDiarioPromedio, DemandaEstimada30Dias,
+                                 Tendencia, PuntoReorden, CalculadoEn
+                          FROM PrediccionDemanda";
+
+            var cmd = new MySqlCommand(query, conn);
+            conn.Open();
+            var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+                lista.Add(MapPrediccion(reader));
+
+            return lista;
+        }
+
         public bool FueCalculadaHace(int productoId, int minutos)
         {
             using var conn = _db.GetConnection();
