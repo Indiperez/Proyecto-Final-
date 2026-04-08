@@ -17,13 +17,16 @@ import type { RegisterFormType } from "@/types/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerFormSchema } from "@/schemas/auth";
 import { ErrorMessage } from "../ErrorMessage";
+import { useCreateAccount } from "@/services/auth/mutations";
 
 export const RegisterForm = () => {
+  const { mutate: createAccount, isPending } = useCreateAccount();
+
   const initialValues: RegisterFormType = {
     email: "",
     nombre: "",
     password: "",
-    rol: "OPERATOR",
+    rol: "Operador",
   };
 
   const {
@@ -31,7 +34,7 @@ export const RegisterForm = () => {
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm({
     resolver: zodResolver(registerFormSchema),
     defaultValues: initialValues,
@@ -39,14 +42,8 @@ export const RegisterForm = () => {
 
   const role = watch("rol");
 
-  const onSubmit = async (formData: RegisterFormType) => {
-    console.log(formData);
-
-    // const success = await register(name, email, password, role);
-
-    // if (success) {
-    //   router.push("/dashboard");
-    // }
+  const onSubmit = (formData: RegisterFormType) => {
+    createAccount({ userRegisterForm: formData });
   };
 
   return (
@@ -110,10 +107,10 @@ export const RegisterForm = () => {
           <button
             type="button"
             onClick={() =>
-              setValue("rol", "OPERATOR", { shouldValidate: true })
+              setValue("rol", "Operador", { shouldValidate: true })
             }
             className={`p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-2 ${
-              role === "OPERATOR"
+              role === "Operador"
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-border/50 bg-secondary/30 text-muted-foreground hover:border-border"
             }`}
@@ -123,9 +120,9 @@ export const RegisterForm = () => {
           </button>
           <button
             type="button"
-            onClick={() => setValue("rol", "ADMIN", { shouldValidate: true })}
+            onClick={() => setValue("rol", "Admin", { shouldValidate: true })}
             className={`p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-2 ${
-              role === "ADMIN"
+              role === "Admin"
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-border/50 bg-secondary/30 text-muted-foreground hover:border-border"
             }`}
@@ -139,9 +136,9 @@ export const RegisterForm = () => {
       <Button
         type="submit"
         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-all duration-300 hover:shadow-lg hover:shadow-primary/25"
-        disabled={isSubmitting}
+        disabled={isPending}
       >
-        {isSubmitting ? (
+        {isPending ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Creando cuenta...

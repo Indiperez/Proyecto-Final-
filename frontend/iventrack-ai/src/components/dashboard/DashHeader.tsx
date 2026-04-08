@@ -9,20 +9,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { useNavigate } from "react-router-dom";
 import { Badge } from "../ui/badge";
+import { useNavigate } from "react-router-dom";
+import { useLogout } from "@/services/auth/useAuth";
+import { useProfile } from "@/services/auth/queries";
 
 export const DashHeader = () => {
   const navigate = useNavigate();
+  const logout = useLogout();
+  const { data: user } = useProfile();
 
-  const user = { name: "", role: "" };
   const alerts = [{ status: "" }];
 
   const pendingAlerts = alerts.filter((a) => a.status === "pending").length;
 
   const handleLogout = () => {
-    // logout();
-    navigate("/login");
+    logout();
   };
 
   return (
@@ -72,10 +74,10 @@ export const DashHeader = () => {
                 </div>
                 <div className="text-left hidden sm:block">
                   <p className="text-sm font-medium text-foreground">
-                    {user?.name || "Usuario"}
+                    {user?.nombre || "Usuario"}
                   </p>
                   <p className="text-xs text-muted-foreground capitalize">
-                    {user?.role || "rol"}
+                    {user?.rol || "rol"}
                   </p>
                 </div>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />

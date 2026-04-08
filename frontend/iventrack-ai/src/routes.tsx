@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthLayout } from "./layouts/auth/AuthLayout";
 import { RegisterView } from "./views/auth/RegisterView";
 import { LoginView } from "./views/auth/LoginView";
@@ -13,6 +13,13 @@ import AlertsPage from "./views/dashboard/alerts/AlertsPage";
 import ReportsPage from "./views/dashboard/reports/ReportsPage";
 import SettingsPage from "./views/dashboard/settings/SettingsPage";
 import { TestPage } from "./views/TestPage";
+import { getTokenLocalStorage } from "./utils/localStorage";
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const token = getTokenLocalStorage();
+  if (!token) return <Navigate to="/auth/login" replace />;
+  return <>{children}</>;
+};
 
 export const Router = () => {
   return (
@@ -25,7 +32,14 @@ export const Router = () => {
           <Route path="/auth/login" element={<LoginView />} />
         </Route>
 
-        <Route path="/dashboard" element={<DashboardLayout />}>
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<DashboardPage />} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="inventory" element={<InventoryPage />} />

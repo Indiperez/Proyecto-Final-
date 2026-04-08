@@ -1,23 +1,23 @@
 import { Loader2, Package } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getTokenLocalStorage } from "@/utils/localStorage";
 
 export const LoadingPage = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect based on authentication status
     const timer = setTimeout(() => {
-      if (isAuthenticated) {
+      const token = getTokenLocalStorage();
+      if (token) {
         navigate("/dashboard");
       } else {
-        navigate("auth/login");
+        navigate("/auth/login");
       }
-    }, 4000);
+    }, 1500);
 
     return () => clearTimeout(timer);
-  }, [isAuthenticated]);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background relative overflow-hidden">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   User,
   Shield,
@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/table";
 
 import { cn } from "@/lib/utils";
+import { useProfile } from "@/services/auth/queries";
 
 // Mock users data
 const mockUsers = [
@@ -73,13 +74,19 @@ const mockUsers = [
 ];
 
 export default function SettingsPage() {
-  const user = { name: "", role: "", email: "" };
-  const isAdmin = user?.role === "admin";
+  const { data: user } = useProfile();
+  const isAdmin = user?.rol === "Admin";
 
   const [profileData, setProfileData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
+    name: "",
+    email: "",
   });
+
+  useEffect(() => {
+    if (user) {
+      setProfileData({ name: user.nombre, email: user.email });
+    }
+  }, [user]);
 
   const [alertSettings, setAlertSettings] = useState({
     lowStockEnabled: true,
@@ -170,17 +177,17 @@ export default function SettingsPage() {
                   <User className="w-10 h-10 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-lg">{user?.name}</p>
+                  <p className="font-medium text-lg">{user?.nombre}</p>
                   <Badge
                     className={cn(
                       "mt-1",
-                      user?.role === "admin"
+                      user?.rol === "Admin"
                         ? "bg-primary/10 text-primary border-primary/20"
                         : "bg-secondary text-secondary-foreground",
                     )}
                   >
                     <Shield className="w-3 h-3 mr-1" />
-                    {user?.role === "admin" ? "Administrador" : "Operador"}
+                    {user?.rol === "Admin" ? "Administrador" : "Operador"}
                   </Badge>
                 </div>
               </div>

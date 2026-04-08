@@ -8,8 +8,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { loginFromSchema } from "@/schemas/auth";
 import type { LoginFormType } from "@/types/auth";
 import { ErrorMessage } from "../ErrorMessage";
+import { useLogin } from "@/services/auth/useAuth";
 
 export const LoginForm = () => {
+  const { mutate: login, isPending } = useLogin();
+
   const initialValues: LoginFormType = {
     email: "",
     password: "",
@@ -17,13 +20,15 @@ export const LoginForm = () => {
   const {
     handleSubmit,
     register,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm({
     resolver: zodResolver(loginFromSchema),
     defaultValues: initialValues,
   });
 
-  const onSubmit = () => {};
+  const onSubmit = (data: LoginFormType) => {
+    login(data);
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -34,7 +39,7 @@ export const LoginForm = () => {
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            {...register}
+            {...register("email")}
             id="email"
             type="email"
             placeholder="correo@ejemplo.com"
@@ -52,7 +57,7 @@ export const LoginForm = () => {
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            {...register}
+            {...register("password")}
             id="password"
             type="password"
             placeholder="••••••••"
@@ -68,9 +73,9 @@ export const LoginForm = () => {
       <Button
         type="submit"
         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-all duration-300 hover:shadow-lg hover:shadow-primary/25"
-        disabled={isSubmitting}
+        disabled={isPending}
       >
-        {isSubmitting ? (
+        {isPending ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Ingresando...
