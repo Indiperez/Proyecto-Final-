@@ -26,6 +26,7 @@ builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IHistoricoConsumoRepository, HistoricoConsumoRepository>();
 builder.Services.AddScoped<IPrediccionRepository, PrediccionRepository>();
 builder.Services.AddScoped<IPrediccionService, PrediccionService>();
+builder.Services.AddHttpClient<IClaudeAiService, ClaudeAiService>();
 
 builder.Services.AddAuthorization();
 
