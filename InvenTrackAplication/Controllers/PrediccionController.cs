@@ -35,7 +35,7 @@ namespace InventTrackAI.API.Controllers
         [HttpPost("{productoId}/recalcular")]
         public async Task<IActionResult> Recalcular(int productoId)
         {
-            await _prediccionService.EjecutarAnalisisAsync(productoId);
+            await _prediccionService.EjecutarAnalisisForzadoAsync(productoId);
 
             var prediccion = _prediccionRepository.ObtenerPorProducto(productoId);
 
