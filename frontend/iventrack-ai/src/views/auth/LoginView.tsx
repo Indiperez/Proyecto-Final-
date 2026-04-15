@@ -45,24 +45,7 @@ export const LoginView = () => {
           </p>
         </CardFooter>
       </Card>
-
-      {/* Demo credentials hint */}
-      <div className="mt-6 p-4 rounded-xl bg-secondary/30 border border-border/30 backdrop-blur-sm animate-fade-in stagger-2">
-        <div className="flex items-center gap-2 text-primary mb-2">
-          <Sparkles className="w-4 h-4" />
-          <span className="text-sm font-medium">Credenciales de prueba</span>
-        </div>
-        <div className="space-y-1 text-xs text-muted-foreground">
-          <p>
-            <span className="text-foreground/70">Admin:</span>{" "}
-            admin@inventrackup.com / admin123
-          </p>
-          <p>
-            <span className="text-foreground/70">Operador:</span>{" "}
-            operador@inventrackup.com / operador123
-          </p>
-        </div>
-      </div>
+      <Sparkles className="absolute top-4 right-4 w-6 h-6 text-primary animate-pulse" />
     </>
   );
 };
