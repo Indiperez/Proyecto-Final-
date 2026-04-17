@@ -6,104 +6,108 @@ import { AxiosError } from "axios";
 
 // Tipado estándar para errores del backend
 interface ApiError {
-    message?: string;
+  message?: string;
 }
 
 export const productKeys = {
-    all: ["products"] as const,
-    list: () => [...productKeys.all, "list"] as const,
-    highRotation: () => [...productKeys.all, "high-rotation"] as const,
-    lowRotation: () => [...productKeys.all, "low-rotation"] as const,
-    lowStock: () => [...productKeys.all, "low-stock"] as const,
-    reorderPoint: () => [...productKeys.all, "reorder-point"] as const,
+  all: ["products"] as const,
+  list: () => [...productKeys.all, "list"] as const,
+  highRotation: () => [...productKeys.all, "high-rotation"] as const,
+  lowRotation: () => [...productKeys.all, "low-rotation"] as const,
+  lowStock: () => [...productKeys.all, "low-stock"] as const,
+  reorderPoint: () => [...productKeys.all, "reorder-point"] as const,
 };
 
 export function useProducts() {
-    return useQuery({
-        queryKey: productKeys.list(),
-        queryFn: ProductsApi.getProducts,
-    });
+  return useQuery({
+    queryKey: productKeys.list(),
+    queryFn: ProductsApi.getProducts,
+  });
 }
 
 export function useHighRotationProducts() {
-    return useQuery({
-        queryKey: productKeys.highRotation(),
-        queryFn: ProductsApi.getHighRotationProducts,
-    });
+  return useQuery({
+    queryKey: productKeys.highRotation(),
+    queryFn: ProductsApi.getHighRotationProducts,
+  });
 }
 
 export function useLowRotationProducts() {
-    return useQuery({
-        queryKey: productKeys.lowRotation(),
-        queryFn: ProductsApi.getLowRotationProducts,
-    });
+  return useQuery({
+    queryKey: productKeys.lowRotation(),
+    queryFn: ProductsApi.getLowRotationProducts,
+  });
 }
 
 export function useLowStockProducts() {
-    return useQuery({
-        queryKey: productKeys.lowStock(),
-        queryFn: ProductsApi.getLowStockProducts,
-    });
+  return useQuery({
+    queryKey: productKeys.lowStock(),
+    queryFn: ProductsApi.getLowStockProducts,
+  });
 }
 
 export function useReorderPointProducts() {
-    return useQuery({
-        queryKey: productKeys.reorderPoint(),
-        queryFn: ProductsApi.getReorderPointProducts,
-    });
+  return useQuery({
+    queryKey: productKeys.reorderPoint(),
+    queryFn: ProductsApi.getReorderPointProducts,
+  });
 }
 
 export function useCreateProduct() {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: (data: CreateProductoRequest) => {
-            console.log('useCreateProduct mutationFn called with:', data);
-            return ProductsApi.createProduct(data);
-        },
-        onSuccess: (response) => {
-            console.log('useCreateProduct onSuccess:', response);
-            if (!response) return;
-            queryClient.invalidateQueries({ queryKey: productKeys.all });
-            // Se asume que el mensaje viene directo en el objeto (no en .data.message)
-            toast.success(response.message || "Producto creado exitosamente");
-        },
-        onError: (error: AxiosError<ApiError>) => {
-            console.error('useCreateProduct onError:', error);
-            toast.error(error.response?.data?.message || "Error al crear producto");
-        },
-    });
+  return useMutation({
+    mutationFn: (data: CreateProductoRequest) => {
+      console.log("useCreateProduct mutationFn called with:", data);
+      return ProductsApi.createProduct(data);
+    },
+    onSuccess: (response) => {
+      console.log("useCreateProduct onSuccess:", response?.message);
+      if (!response) return;
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
+      // Se asume que el mensaje viene directo en el objeto (no en .data.message)
+      toast.success(response.message || "Producto creado exitosamente");
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      console.error("useCreateProduct onError:", error);
+      toast.error(error.response?.data?.message || "Error al crear producto");
+    },
+  });
 }
 
 export function useUpdateProduct() {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: ({ id, data }: { id: number; data: UpdateProductoRequest }) =>
-            ProductsApi.updateProduct(id, data),
-        onSuccess: (response) => {
-            if (!response) return;
-            queryClient.invalidateQueries({ queryKey: productKeys.all });
-            toast.success(response.message || "Producto actualizado exitosamente");
-        },
-        onError: (error: AxiosError<ApiError>) => {
-            toast.error(error.response?.data?.message || "Error al actualizar producto");
-        },
-    });
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateProductoRequest }) =>
+      ProductsApi.updateProduct(id, data),
+    onSuccess: (response) => {
+      if (!response) return;
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
+      toast.success(response.message || "Producto actualizado exitosamente");
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      toast.error(
+        error.response?.data?.message || "Error al actualizar producto",
+      );
+    },
+  });
 }
 
 export function useDeleteProduct() {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: (id: number) => ProductsApi.deleteProduct(id),
-        onSuccess: (response) => {
-            if (!response) return;
-            queryClient.invalidateQueries({ queryKey: productKeys.all });
-            toast.success(response.message || "Producto eliminado exitosamente");
-        },
-        onError: (error: AxiosError<ApiError>) => {
-            toast.error(error.response?.data?.message || "Error al eliminar producto");
-        },
-    });
+  return useMutation({
+    mutationFn: (id: number) => ProductsApi.deleteProduct(id),
+    onSuccess: (response) => {
+      if (!response) return;
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
+      toast.success(response.message || "Producto eliminado exitosamente");
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      toast.error(
+        error.response?.data?.message || "Error al eliminar producto",
+      );
+    },
+  });
 }

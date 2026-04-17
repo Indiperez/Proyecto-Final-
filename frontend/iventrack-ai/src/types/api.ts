@@ -118,6 +118,7 @@ export interface CreateMovimientoRequest {
 export interface Alerta {
     id: number;
     productoId: number;
+    nombreProducto: string;
     mensaje: string;
     fecha: string;
     leida: boolean;

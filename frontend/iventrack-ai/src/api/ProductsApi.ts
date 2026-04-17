@@ -18,7 +18,7 @@ export async function createProduct(data: CreateProductoRequest) {
     api.post(PRODUCTO.CREATE, data),
   );
 
-  console.log(resposne);
+  return resposne;
 }
 
 export async function updateProduct(id: number, data: UpdateProductoRequest) {

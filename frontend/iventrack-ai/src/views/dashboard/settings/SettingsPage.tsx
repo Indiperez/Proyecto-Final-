@@ -40,42 +40,13 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useProfile } from "@/services/auth/queries";
-
-// Mock users data
-const mockUsers = [
-  {
-    id: "1",
-    name: "Admin Demo",
-    email: "admin@inventrackup.com",
-    role: "admin",
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "Operador Demo",
-    email: "operador@inventrackup.com",
-    role: "operator",
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "María García",
-    email: "maria@inventrackup.com",
-    role: "operator",
-    status: "active",
-  },
-  {
-    id: "4",
-    name: "Carlos López",
-    email: "carlos@inventrackup.com",
-    role: "operator",
-    status: "inactive",
-  },
-];
+import { useUsuarios } from "@/services/users/useUsers";
 
 export default function SettingsPage() {
   const { data: user } = useProfile();
   const isAdmin = user?.rol === "Admin";
+  const { data: usuariosData, isLoading: loadingUsuarios } = useUsuarios();
+  const usuarios = usuariosData ?? [];
 
   const [profileData, setProfileData] = useState({
     name: "",
@@ -378,45 +349,63 @@ export default function SettingsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockUsers.map((u) => (
-                      <TableRow key={u.id} className="border-border/50">
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                              <User className="w-4 h-4 text-primary" />
-                            </div>
-                            <span className="font-medium">{u.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {u.email}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge
-                            className={cn(
-                              "border",
-                              u.role === "admin"
-                                ? "bg-primary/10 text-primary border-primary/20"
-                                : "bg-secondary text-secondary-foreground border-border",
-                            )}
-                          >
-                            {u.role === "admin" ? "Admin" : "Operador"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge
-                            className={cn(
-                              "border",
-                              u.status === "active"
-                                ? "bg-success/10 text-success border-success/20"
-                                : "bg-muted text-muted-foreground border-border",
-                            )}
-                          >
-                            {u.status === "active" ? "Activo" : "Inactivo"}
-                          </Badge>
+                    {loadingUsuarios ? (
+                      Array.from({ length: 3 }).map((_, i) => (
+                        <TableRow key={i} className="border-border/50">
+                          {Array.from({ length: 4 }).map((_, j) => (
+                            <TableCell key={j}>
+                              <div className="h-4 bg-secondary/50 rounded animate-pulse" />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : usuarios.length === 0 ? (
+                      <TableRow className="border-border/50">
+                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                          No hay usuarios registrados.
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      usuarios.map((u) => (
+                        <TableRow key={u.id} className="border-border/50">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                                <User className="w-4 h-4 text-primary" />
+                              </div>
+                              <span className="font-medium">{u.nombre}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {u.email}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge
+                              className={cn(
+                                "border",
+                                u.rol === "Admin"
+                                  ? "bg-primary/10 text-primary border-primary/20"
+                                  : "bg-secondary text-secondary-foreground border-border",
+                              )}
+                            >
+                              {u.rol === "Admin" ? "Admin" : "Operador"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge
+                              className={cn(
+                                "border",
+                                u.activo
+                                  ? "bg-success/10 text-success border-success/20"
+                                  : "bg-muted text-muted-foreground border-border",
+                              )}
+                            >
+                              {u.activo ? "Activo" : "Inactivo"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
