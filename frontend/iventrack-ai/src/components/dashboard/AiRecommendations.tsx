@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 import { useAlerts } from "@/services/alerts/useAlerts";
 import type { Alerta } from "@/types/api";
 
@@ -29,6 +30,7 @@ interface Recommendation {
   description: string;
   priority: Priority;
   action: string;
+  productName: string;
 }
 
 function classifyAlerta(alerta: Alerta): Recommendation {
@@ -76,6 +78,7 @@ function classifyAlerta(alerta: Alerta): Recommendation {
     description: alerta.mensaje,
     priority,
     action,
+    productName: alerta.nombreProducto,
   };
 }
 
@@ -90,7 +93,15 @@ const getPriorityStyles = (priority: string) => {
   }
 };
 
+const ACTION_ROUTES: Record<RecommendationType, string> = {
+  critical: "/dashboard/movements",
+  reorder: "/dashboard/movements",
+  trend: "/dashboard/analysis",
+  low_rotation: "/dashboard/analysis",
+};
+
 export function AIRecommendations() {
+  const navigate = useNavigate();
   const { data: alerts, isLoading } = useAlerts();
 
   const recommendations: Recommendation[] = (alerts ?? [])
@@ -157,6 +168,9 @@ export function AIRecommendations() {
                         <h4 className="text-sm font-medium text-foreground">
                           {rec.title}
                         </h4>
+                        <p className="text-xs font-medium text-muted-foreground/80">
+                          {rec.productName}
+                        </p>
                         <Badge
                           variant="outline"
                           className={cn(
@@ -182,6 +196,7 @@ export function AIRecommendations() {
                         variant="ghost"
                         size="sm"
                         className="h-7 px-2 text-xs text-primary hover:text-primary/80 hover:bg-primary/10"
+                        onClick={() => navigate(ACTION_ROUTES[rec.type])}
                       >
                         {rec.action}
                       </Button>

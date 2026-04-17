@@ -26,6 +26,7 @@ import { useAlerts, useMarkAlertAsRead } from "@/services/alerts/useAlerts";
 
 type StatusFilter = "all" | "pending" | "attended";
 type PriorityFilter = "all" | "high" | "medium" | "low";
+type AlertWithName = Alert & { nombreProducto: string };
 
 export default function AlertsPage() {
   const { data: alertsData, isLoading, isError } = useAlerts();
@@ -34,7 +35,7 @@ export default function AlertsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
 
-  const alerts: Alert[] = (alertsData ?? []).map((alerta: Alerta) => {
+  const alerts: AlertWithName[] = (alertsData ?? []).map((alerta: Alerta) => {
     const msg = alerta.mensaje.toLowerCase();
     let type: Alert["type"] = "reorder";
     let priority: Alert["priority"] = "medium";
@@ -45,10 +46,7 @@ export default function AlertsPage() {
     } else if (msg.includes("punto de reorden")) {
       type = "reorder";
       priority = "medium";
-    } else if (
-      msg.includes("baja rotación") ||
-      msg.includes("baja rotacion")
-    ) {
+    } else if (msg.includes("baja rotación") || msg.includes("baja rotacion")) {
       type = "no_movement";
       priority = "low";
     } else if (msg.includes("alta demanda")) {
@@ -59,6 +57,7 @@ export default function AlertsPage() {
     return {
       id: alerta.id.toString(),
       productId: alerta.productoId.toString(),
+      nombreProducto: alerta.nombreProducto,
       type,
       priority,
       date: new Date(alerta.fecha).toISOString().split("T")[0],
@@ -341,7 +340,7 @@ export default function AlertsPage() {
                       <div className="flex items-center gap-2 mb-2">
                         <Package className="w-4 h-4 text-muted-foreground" />
                         <span className="font-medium">
-                          {`Producto #${alert.productId}`}
+                          {alert.nombreProducto}
                         </span>
                       </div>
 

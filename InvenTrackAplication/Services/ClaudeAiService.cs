@@ -30,20 +30,30 @@ namespace InventTrackAI.API.Services
             decimal puntoReorden,
             string tipoAlerta)
         {
-            var prompt = $@"Eres un asistente experto en gestión de inventarios.
-Analiza la siguiente situación y genera UNA recomendación concisa y accionable
-en español (máximo 2 oraciones). Sé específico con los números.
+            var prompt = $@"Eres un sistema experto en gestión de inventarios con capacidades
+de análisis predictivo. Genera una recomendación profesional y detallada en español
+basada en el siguiente análisis estadístico del producto.
 
-Producto: {nombreProducto}
-Stock actual: {stockActual} unidades
-Stock mínimo requerido: {stockMinimo} unidades
-Consumo diario promedio: {consumoDiario:F1} unidades/día
-Demanda estimada próximos 30 días: {demandaEstimada30Dias:F0} unidades
-Tendencia: {tendencia}
-Punto de reorden: {puntoReorden:F0} unidades
-Tipo de alerta: {tipoAlerta}
+DATOS DEL ANÁLISIS:
+- Producto: {nombreProducto}
+- Stock actual: {stockActual} unidades
+- Stock mínimo requerido: {stockMinimo} unidades
+- Consumo diario promedio (últimos 30 días): {consumoDiario:F2} unidades/día
+- Demanda proyectada próximos 30 días: {demandaEstimada30Dias:F0} unidades
+- Tendencia de consumo: {tendencia}
+- Punto de reorden calculado: {puntoReorden:F0} unidades
+- Tipo de alerta detectada: {tipoAlerta}
+- Días de stock restante estimado: {(consumoDiario > 0 ? (int)(stockActual / consumoDiario) : 999)} días
 
-Responde SOLO con la recomendación, sin explicaciones adicionales ni formato markdown.";
+INSTRUCCIONES:
+1. Responde ÚNICAMENTE en español
+2. Máximo 3 oraciones
+3. Incluye números específicos del análisis
+4. Menciona el impacto si no se actúa
+5. Da una acción concreta con cantidad y urgencia
+6. NO uses markdown, NO uses listas, solo texto corrido profesional
+
+Recomendación:";
 
             var requestBody = new
             {
@@ -77,6 +87,9 @@ Responde SOLO con la recomendación, sin explicaciones adicionales ni formato ma
             var result = await response.Content.ReadFromJsonAsync<OpenRouterResponse>();
             var text = result?.Choices?.FirstOrDefault()?.Message?.Content
                 ?? "Revisar inventario de este producto.";
+
+            if (text.Length > 500)
+                text = text.Substring(0, 497) + "...";
 
             Console.WriteLine($"[OpenRouter] Recomendación: {text.Substring(0, Math.Min(80, text.Length))}...");
 
